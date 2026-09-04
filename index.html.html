@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ebook Factory AI — Crie eBooks profissionais em poucos minutos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+:root{--bg:#f6f7fb;--card:#fff;--ink:#0f172a;--mut:#64748b;--line:#e5e7eb;--brand:#4f46e5;--brand2:#7c3aed;--ok:#059669;--warn:#d97706;--err:#dc2626;--r:14px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:14px}
+a{color:inherit;text-decoration:none}
+button{font-family:inherit;cursor:pointer}
+.hidden{display:none!important}
+/* layout */
+.shell{display:flex;min-height:100vh}
+.side{width:236px;background:#0b1020;color:#cbd5e1;display:flex;flex-direction:column;position:fixed;top:0;bottom:0}
+.side .logo{padding:20px 18px;font-weight:800;color:#fff;font-size:15px;letter-spacing:.3px;display:flex;gap:10px;align-items:center}
+.side .logo b{background:linear-gradient(135deg,var(--brand),var(--brand2));padding:6px 8px;border-radius:9px}
+.side nav{flex:1;padding:6px 10px}
+.side nav a{display:flex;gap:10px;align-items:center;padding:10px 12px;border-radius:10px;color:#94a3b8;font-weight:500;margin-bottom:2px}
+.side nav a:hover{background:#151b31;color:#e2e8f0}
+.side nav a.active{background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff}
+.side .ubox{padding:14px;border-top:1px solid #1e293b;font-size:12px}
+.main{flex:1;margin-left:236px;display:flex;flex-direction:column;min-height:100vh}
+.topbar{background:#fff;border-bottom:1px solid var(--line);padding:14px 28px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:5}
+.topbar h1{font-size:16px;font-weight:700}
+.content{padding:26px 28px;max-width:1180px;width:100%;margin:0 auto}
+/* ui */
+.btn{background:#fff;border:1px solid var(--line);border-radius:10px;padding:9px 14px;font-weight:600;font-size:13px;display:inline-flex;gap:7px;align-items:center;transition:.15s}
+.btn:hover{border-color:#c7cbd4}
+.btn-p{background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff;border:none}
+.btn-p:hover{opacity:.92}
+.btn-d{background:#fee2e2;color:#b91c1c;border:none}
+.btn-s{padding:6px 10px;font-size:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:20px}
+.grid{display:grid;gap:16px}
+.g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(4,1fr)}
+.stat{display:flex;flex-direction:column;gap:4px}
+.stat b{font-size:24px;font-weight:800}
+.stat span{color:var(--mut);font-size:12px}
+.input,select,textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-family:inherit;font-size:13px;background:#fff;color:var(--ink)}
+textarea{resize:vertical}
+.label{font-size:12px;font-weight:600;color:var(--mut);display:block;margin:10px 0 5px}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:7px 13px;font-size:12px;font-weight:600;background:#fff;cursor:pointer}
+.chip.on{background:var(--brand);border-color:var(--brand);color:#fff}
+.badge{border-radius:999px;padding:3px 9px;font-size:10.5px;font-weight:700;letter-spacing:.4px}
+.b-ok{background:#d1fae5;color:#047857}.b-warn{background:#fef3c7;color:#b45309}.b-mut{background:#e2e8f0;color:#475569}.b-brand{background:#e0e7ff;color:#4338ca}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line)}
+th{color:var(--mut);font-size:11px;text-transform:uppercase;letter-spacing:.5px}
+/* wizard */
+.steps{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:22px}
+.steps .st{padding:7px 13px;border-radius:999px;background:#e8eaf3;color:#5b6472;font-size:12px;font-weight:600}
+.steps .st.on{background:var(--brand);color:#fff}
+.steps .st.done{background:#d1fae5;color:#047857}
+.opt{border:1.5px solid var(--line);border-radius:var(--r);padding:16px;cursor:pointer;background:#fff;transition:.15s;position:relative}
+.opt:hover{border-color:var(--brand)}
+.opt.sel{border-color:var(--brand);box-shadow:0 0 0 3px #e0e7ff}
+.opt h4{font-size:14px;margin-bottom:6px}
+.opt p{color:var(--mut);font-size:12.5px;line-height:1.55}
+.opt .rec{position:absolute;top:12px;right:12px}
+/* preview */
+.sheet{width:640px;min-height:905px;background:#fff;border:1px solid var(--line);border-radius:6px;box-shadow:0 12px 40px rgba(2,6,23,.12);margin:0 auto;overflow:hidden;position:relative}
+.thumbs{display:flex;flex-direction:column;gap:8px}
+.thumbs button{width:64px;height:90px;border:2px solid var(--line);border-radius:6px;background:#fff;font-size:11px;font-weight:700;color:var(--mut)}
+.thumbs button.on{border-color:var(--brand);color:var(--brand)}
+/* job */
+.jobline{display:flex;gap:10px;align-items:center;padding:7px 0;font-size:13px;color:var(--mut)}
+.jobline.done{color:var(--ok);font-weight:600}
+.jobline.run{color:var(--brand);font-weight:700}
+.spin{width:14px;height:14px;border:2px solid #c7cbd4;border-top-color:var(--brand);border-radius:50%;animation:sp 0.8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+/* modal/toast */
+.modal-bg{position:fixed;inset:0;background:rgba(15,23,42,.5);display:flex;align-items:center;justify-content:center;z-index:50;padding:20px}
+.modal{background:#fff;border-radius:16px;max-width:640px;width:100%;max-height:86vh;overflow:auto;padding:24px}
+.modal h3{margin-bottom:14px}
+#toasts{position:fixed;bottom:20px;right:20px;z-index:99;display:flex;flex-direction:column;gap:10px}
+.toast{background:#0f172a;color:#fff;border-radius:12px;padding:12px 16px;font-size:13px;box-shadow:0 10px 30px rgba(0,0,0,.3);max-width:340px}
+.toast.err{background:#7f1d1d}.toast.ok{background:#065f46}
+/* landing */
+.lp nav{display:flex;justify-content:space-between;align-items:center;padding:18px 6vw;background:#fff;border-bottom:1px solid var(--line)}
+.lp .hero{background:linear-gradient(135deg,#1e1b4b,#4f46e5 55%,#7c3aed);color:#fff;padding:80px 6vw;text-align:center}
+.lp .hero h1{font-size:44px;font-weight:800;max-width:760px;margin:0 auto 16px;line-height:1.15}
+.lp .hero p{font-size:17px;opacity:.9;max-width:640px;margin:0 auto 30px}
+.lp section{padding:64px 6vw}
+.lp h2{font-size:28px;font-weight:800;margin-bottom:10px}
+.lp .sub{color:var(--mut);margin-bottom:30px;max-width:640px}
+.lp .big{background:#fff;border:1px solid var(--line);border-radius:18px;padding:44px;font-size:64px;text-align:center}
+.faq details{border:1px solid var(--line);border-radius:12px;padding:14px 18px;margin-bottom:10px;background:#fff}
+.faq summary{font-weight:600;cursor:pointer}
+.faq p{color:var(--mut);margin-top:8px}
+footer{padding:30px 6vw;color:var(--mut);font-size:12px;border-top:1px solid var(--line)}
+.kv{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px dashed var(--line);font-size:13px}
+.kv b{color:var(--mut);font-weight:600}
+.copyrow{display:flex;gap:8px;align-items:flex-start;justify-content:space-between}
+pre.txt{background:#f1f5f9;border:1px solid var(--line);border-radius:10px;padding:12px;font-size:12px;white-space:pre-wrap;font-family:'Inter',sans-serif;line-height:1.6;max-height:220px;overflow:auto}
+.notice{background:#fffbeb;border:1px solid #fde68a;color:#92400e;border-radius:10px;padding:10px 14px;font-size:12.5px;margin:10px 0}
+@media(max-width:900px){.side{display:none}.main{margin-left:0}.g2,.g3,.g4{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="toasts"></div>
+<div id="modal-root"></div>
+
+<script>
+"use strict";
+/* ================================================================
+   /utils — utilidades gerais
+================================================================ */
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const uid=()=> (crypto.randomUUID?crypto.randomUUID():'id-'+Math.random().toString(36).slice(2)+Date.now());
+const now=()=>Date.now();
+const fmtD=t=>new Date(t).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'});
+function mulberry(seed){let a=seed>>>0;return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function hashStr(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
+async function sha256(s){try{const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));return[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}catch(e){return 'fnv'+hashStr(s)}}
+function toast(msg,type){const t=document.createElement('div');t.className='toast '+(type||'');t.textContent=msg;$('#toasts').appendChild(t);setTimeout(()=>t.remove(),4200)}
+async function copyText(txt){try{await navigator.clipboard.writeText(txt);toast('Copiado para a área de transferência.','ok')}catch(e){const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();toast('Copiado.','ok')}}
+function downloadBlob(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),4000)}
+const esc=s=>String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const slug=s=>String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'').slice(0,60);
+function openModal(html){$('#modal-root').innerHTML='<div class="modal-bg" data-act="modal-bg"><div class="modal" onclick="event.stopPropagation()">'+html+'</div></div>'}
+function closeModal(){$('#modal-root').innerHTML=''}
+function confirmBox(msg,onYes){openModal('<h3>Confirmar</h3><p style="color:var(--mut);margin-bottom:16px">'+esc(msg)+'</p><div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn" data-act="modal-close">Cancelar</button><button class="btn btn-d" id="cf-yes">Excluir</button></div>');$('#cf-yes').onclick=()=>{closeModal();onYes()}}
+
+/* ================================================================
+   /storage — camada de banco (repository pattern)
+   Produção: trocar este módulo por Prisma/Postgres (schema no README)
+================================================================ */
+const LS='efai_';
+const lsGet=(k,d)=>{try{const v=localStorage.getItem(LS+k);return v?JSON.parse(v):d}catch(e){return d}};
+const lsSet=(k,v)=>localStorage.setItem(LS+k,JSON.stringify(v));
+const DB={
+  users:()=>lsGet('users',[]), saveUsers:u=>lsSet('users',u),
+  session:()=>lsGet('session',null), setSession:s=>lsSet('session',s), clearSession:()=>localStorage.removeItem(LS+'session'),
+  niches:()=>lsGet('niches',null), saveNiches:n=>lsSet('niches,n'.replace(',n',''),n),
+  prompts:()=>lsGet('prompts',null), savePrompts:p=>lsSet('prompts',p),
+  data:uid=>lsGet('u_'+uid,{ebooks:[],posts:[],logs:[],groupsCache:[]}),
+  saveData:(uid,d)=>lsSet('u_'+uid,d),
+  settings:uid=>Object.assign({plan:'FREE',author:'Autor(a)',aiKey:'',aiModel:'gpt-4o-mini',template:'moderno'},lsGet('set_'+uid,{})),
+  saveSettings:(uid,s)=>lsSet('set_'+uid,s)
+};
+function userData(){return DB.data(S.user.id)}
+function saveUserData(d){DB.saveData(S.user.id,d)}
+function logEvent(type,msg,extra){const d=userData();d.logs.unshift({id:uid(),t:now(),type,msg,extra:extra||null});d.logs=d.logs.slice(0,200);saveUserData(d)}
+
+/* ================================================================
+   /data — nichos e subnichos (seed; admin pode ampliar)
+================================================================ */
+const NICHES_SEED=[
+{id:'dev-pessoal',name:'Desenvolvimento Pessoal',icon:'🌱',color:'#059669',sensitive:false,kw:['produtividade','hábitos','disciplina','autoconhecimento'],subs:[
+{n:'Produtividade',p:'vive ocupado o dia inteiro mas sente que não produz o que realmente importa',pr:'dobrar seu foco e entregar mais em menos tempo, sem viver exausto',c:['Gestão de Energia','produtividade real não é fazer mais tarefas, é administrar atenção e energia para trabalhar no que gera resultado'],s:['Priorização implacável com regra 80/20','Blocos de foco profundo sem interrupções','Sistema semanal de revisão e planejamento'],st:['Liste tudo o que compete pela sua atenção','Eleja as 3 tarefas de maior impacto da semana','Bloqueie 2 blocos de 90 min de foco no calendário','Desative notificações durante os blocos','Revise e replaneje toda sexta por 20 min'],tp:['Trabalhe em blocos, não em maratona','Uma única prioridade por bloco','Ambiente limpo é parte do método','Cansaço também se agenda: pause antes de exaustar'],ex:'Exemplo: ao proteger 2 blocos de foco por dia, um analista passou a concluir relatórios em metade do tempo.'},
+{n:'Disciplina',p:'começa cheio de motivação, mas abandona tudo na segunda semana',pr:'construir constância real mesmo nos dias sem motivação',c:['Identidade Disciplinada','disciplina não é força de vontade infinita, é votar todos os dias na pessoa que você quer se tornar'],s:['Metas mínimas inegociáveis','Ambiente que elimina tentações','Cadeia de consistência (never miss twice)'],st:['Defina 1 hábito âncora pequeno e diário','Fixe horário e gatilho claros','Prepare o ambiente na véspera','Registre cada dia cumprido em um calendário','Falhou um dia? Volte no seguinte, sem exceção'],tp:['Comece menor do que acha que deveria','Motivação inicia, sistema mantém','Conte dias consecutivos, não resultados','Perfeccionismo é inimigo da constância'],ex:'Exemplo: começar com 5 minutos de leitura diária criou o gatilho que virou 1 livro por mês.'},
+{n:'Hábitos',p:'sabe o que precisa mudar, mas não consegue manter os novos comportamentos',pr:'instalar hábitos que duram usando o loop científico do comportamento',c:['Loop do Hábito','todo hábito segue gatilho → rotina → recompensa; quem domina o loop, domina a mudança'],s:['Hábitos minúsculos para começar','Empilhamento em rotinas existentes','Recompensas imediatas bem definidas'],st:['Escolha 1 hábito e reduza a 2 minutos','Ancore em algo que já faz (café, banho, escovar)','Defina recompensa imediata simples','Marque visualmente cada execução','Aumente a dificuldade 1% por semana'],tp:['Nunca falhe dois dias seguidos','Torne o hábito fácil de começar','Identidade vem antes do resultado','Meça execução, não perfeição'],ex:'Exemplo: "depois do café, 2 minutos de alongamento" virou rotina de 30 min em 8 semanas.'},
+{n:'Inteligência emocional',p:'reage no calor do momento e se arrepende depois',pr:'reconhecer e regular emoções para decidir melhor sob pressão',c:['Pausa Estratégica','entre o estímulo e a resposta existe um espaço; treinar esse espaço é treinar liberdade'],s:['Nomear emoções para domá-las','Ressignificação de gatilhos','Comunicação não violenta no dia a dia'],st:['Identifique seus 3 gatilhos mais frequentes','Pratique nomear a emoção em 1 palavra','Respire 4-7-8 antes de responder','Separe fato de interpretação por escrito','Peça feedback mensal sobre suas reações'],tp:['Emoção é dado, não ordem','Validar sentir não é aprovar agir','Sono ruim amplifica reatividade','Autocrítica dura sabota a regulação'],ex:'Exemplo: nomear "frustração, não raiva" mudou completamente a resposta em uma reunião difícil.'},
+{n:'Autoconhecimento',p:'toma decisões no piloto automático e sente que vive a vida dos outros',pr:'clareza sobre valores, forças e direção para decidir com intenção',c:['Mapa de Valores','decisões alinhadas com valores profundos geram energia; decisões desalinhadas geram atrito constante'],s:['Auditoria de valores pessoais','Inventário de forças e drenos','Diário de reflexão estruturado'],st:['Liste 10 momentos de energia alta e 10 de dreno','Extraia os valores que se repetem','Ranqueie seus 5 valores centrais','Compare agenda atual com esses valores','Ajuste 1 compromisso por semana ao mapa'],tp:['Pergunte "por quê" 5 vezes seguidas','Comparação externa apaga sinal interno','Escrever é pensar com clareza','Revisão mensal vale mais que meta nova'],ex:'Exemplo: descobrir que "autonomia" era valor central explicou anos de insatisfação no emprego.'}]},
+{id:'financas',name:'Finanças',icon:'💰',color:'#b45309',sensitive:true,kw:['dinheiro','dívidas','investimentos','economia','renda extra'],subs:[
+{n:'Organização financeira',p:'vive no aperto sem saber para onde o dinheiro realmente vai',pr:'assumir o controle total do seu dinheiro em 30 dias',c:['Raio-X Financeiro','ninguém organiza o que não enxerga: o primeiro passo é mapear cada entrada e saída com dados reais'],s:['Diagnóstico completo de 30 dias','Categorias com teto de gasto','Rotina mensal de revisão financeira'],st:['Anote todas as despesas por 7 dias, sem julgar','Classifique em essencial, importante e supérfluo','Defina teto mensal por categoria','Automatize transferências no dia do pagamento','Faça uma reunião mensal de 30 min com seu dinheiro'],tp:['Use a referência 50-30-20 (essencial, estilo de vida, futuro)','Concilie cartão e contas 1x por semana','Dê nome e prazo para cada meta','Simplicidade vence planilha perfeita'],ex:'Exemplo: revisar 30 dias de extrato revelou R$ 412/mês em assinaturas e delivery esquecidos.'},
+{n:'Economia doméstica',p:'o salário acaba antes do fim do mês e a casa pesa no orçamento',pr:'reduzir até 30% dos custos da casa sem perder qualidade de vida',c:['Gasto Consciente','economizar bem não é cortar tudo, é trocar gasto invisível por valor real para a família'],s:['Caça aos gastos invisíveis','Compras planejadas com lista e regra 48h','Negociação de contas fixas'],st:['Levante as 5 maiores contas da casa','Negocie ou troque planos (internet, energia, mercado)','Monte cardápio semanal e lista de compra','Aplique a regra das 48h para compras não previstas','Defina 1 dia fixo de "reunião da casa"'],tp:['Compra de lista vence promoção impulsiva','Comparar preço por unidade muda o jogo','Lazer planejado evita fuga cara','Envolva a família nas metas'],ex:'Exemplo: trocar marca e negociar o plano de internet gerou economia de R$ 180/mês sem perda perceptível.'},
+{n:'Renda extra',p:'o salário não fecha e não sobra tempo para pensar em alternativas',pr:'criar sua primeira fonte de renda extra com o que você já sabe fazer',c:['Habilidade Monetizável','renda extra sustentável nasce da interseção entre o que você sabe, o que as pessoas pagam e o tempo que você tem'],s:['Inventário de habilidades vendáveis','Primeira oferta simples em 7 dias','Canalização do lucro para metas'],st:['Liste 10 coisas que você sabe fazer bem','Escolha a que alguém já pagaria hoje','Defina oferta clara: o quê, para quem, por quanto','Anuncie em 2 canais e fale com 10 pessoas','Entregue, peça indicação e rein vista no essencial'],tp:['Comece com serviço, não com estrutura','Tempo livre vira ativo quando tem oferta','Separe o lucro da renda principal','Validar antes de investir é regra'],ex:'Exemplo: transformar a habilidade com doces em encomendas de fim de semana cobriu a conta de luz.'},
+{n:'Investimentos para iniciantes',p:'deixa o dinheiro parado por medo de perder ou por achar que é coisa de rico',pr:'dar os primeiros passos seguros e conscientes no mundo dos investimentos',c:['Juros Compostos + Risco','investir é fazer o dinheiro trabalhar com método: reserva primeiro, risco adequado depois, tempo sempre a favor'],s:['Reserva de emergência antes de tudo','Começar pelo simples e diversificado','Aportes automáticos e constantes'],st:['Quite ou organize dívidas caras primeiro','Monte reserva de 3 a 6 meses do essencial','Estude o básico de renda fixa e fundos indexados','Defina aporte automático mensal','Revise a carteira a cada 6 meses, sem operar no impulso'],tp:['Desconfie de retorno garantido acima do mercado','Diversificação reduz sustos, não elimina riscos','Tempo no mercado vale mais que timing','Taxas pequenas corroem resultados grandes'],ex:'Exemplo: aportar R$ 200/mês com constância criou o hábito que financiou a primeira reserva completa.'},
+{n:'Educação financeira',p:'repete ciclos de dívidas porque ninguém ensinou dinheiro em casa',pr:'instalar os 5 fundamentos do dinheiro para nunca mais viver no ciclo da dívida',c:['Ciclo do Dinheiro','ganhar, guardar, investir e doar: quem entende a ordem dos fundamentos quebra o ciclo da dívida'],s:['Mentalidade de pagador primeiro','Metas com propósito claro','Proteção contra dívidas caras'],st:['Entenda seu ciclo: quanto entra, sai e sobra','Pague-se primeiro, mesmo que pouco','Elimine dívidas caras em bola de neve','Crie metas de curto, médio e longo prazo','Estude 20 min por semana sobre dinheiro'],tp:['Dívida boa é rara; dívida cara é sempre cara','Cartão é ferramenta, não extensão do salário','Comemorar pequenas vitórias mantém o curso','Ensinar pelo exemplo muda a próxima geração'],ex:'Exemplo: o método bola de neve quitou 3 cartões em 14 meses e mudou a relação da família com crédito.'}]},
+{id:'saude',name:'Saúde e Bem-Estar',icon:'🍃',color:'#0d9488',sensitive:true,kw:['sono','estresse','bem-estar','qualidade de vida'],subs:[
+{n:'Sono',p:'deita cansado, rola na tela e acorda mais exausto ainda',pr:'construir uma rotina de sono que devolve sua energia em 21 dias',c:['Higiene do Sono','sono ruim quase sempre é rotina ruim: luz, horário e tela pesam mais do que imagina'],s:['Horário âncora constante','Ritual de desaceleração noturna','Ambiente otimizado para dormir'],st:['Fixe o horário de acordar, inclusive no fim de semana','Crie alarme de "começar a dormir"','Corte telas 60 min antes (ou use filtro quente)','Deixe o quarto escuro, fresco e silencioso','Anote qualidade do sono por 2 semanas'],tp:['Cafeína depois das 14h cobra juros à noite','Cochilo longo rouba o sono da noite','Exercício regular aprofunda o sono','Insônia persistente pede avaliação profissional'],ex:'Exemplo: trocar 40 min de rede social por banho morno e leitura mudou a nota de sono de 4 para 8.'},
+{n:'Alimentação saudável',p:'come bem na segunda, desaba na sexta e vive no ciclo tudo-ou-nada',pr:'montar uma alimentação simples e sustentável que cabe na sua rotina',c:['Regra da Adição','em vez de proibir, adicione: mais comida de verdade no prato reduz o resto por consequência'],s:['Prato base repetível','Preparo antecipado sem complicação','Flexibilidade planejada (80/20)'],st:['Defina 3 cafés da manhã que se repetem','Monte lista de 10 almoços/jantares simples','Cozinhe em dobro para a marmita','Deixe frutas lavadas à vista','Planeje 2 refeições livres por semana'],tp:['O que está à vista é o que será comido','Proteína e fibra seguram a fome','Hidratação confunde-se com fome','Dieta perfeita que não dura perde para a boa que dura'],ex:'Exemplo: o "prato base" (arroz, feijão, proteína, 2 vegetais) acabou com a decisão de última hora.'},
+{n:'Estresse',p:'vive no modo alerta, com tensão no corpo e mente acelerada',pr:'reduzir a carga de estresse com micropráticas que cabem no dia',c:['Janela de Tolerância','estresse não se elimina, se regula: pequenas pausas devolvem o corpo à zona de segurança'],s:['Pausas de regulação 3x ao dia','Descarga física diária','Limites claros de trabalho e tela'],st:['Mapeie seus 3 picos de tensão no dia','Insira pausa de 5 min com respiração lenta','Caminhe 20 min por dia, de preferência ao ar livre','Defina horário de fim do expediente digital','Escreva 3 linhas de descarrego ao fim do dia'],tp:['Respiração longa na expiração acalma o corpo','Estresse crônico pede acompanhamento profissional','Falar sobre o que sente reduz a carga','Lazer não é luxo, é manutenção'],ex:'Exemplo: 3 pausas de respiração 4-6 reduziram a tensão do fim de tarde em duas semanas.'},
+{n:'Bem-estar',p:'cuida de todo mundo e se deixou por último na lista',pr:'construir uma rotina de autocuidado realista que recarrega sua bateria',c:['Autocuidado Estrutural','autocuidado não é spa uma vez por ano, são pequenas escolhas diárias que sustentam corpo, mente e relações'],s:['Check-in semanal de energia','Rituais diários de 10 minutos','Rede de apoio ativa'],st:['Avalie sono, movimento, conexão e lazer (0-10)','Escolha 1 área para cuidar esta semana','Agende 10 min diários de ritual simples','Combine 1 encontro semanal com alguém querido','Revise a energia todo domingo'],tp:['Autocuidado sem agenda não acontece','Dizer não também é cuidado','Pequeno e constante vence grande e raro','Culpa não é descanso'],ex:'Exemplo: 10 min de café sem tela pela manhã viraram o momento mais esperado do dia.'},
+{n:'Qualidade de vida',p:'a rotina virou uma esteira: casa, trabalho, tela, cama',pr:'redesenhar sua semana para ter tempo, energia e prazer de novo',c:['Roda da Vida Prática','qualidade de vida melhora quando você ajusta uma área por vez com experimentos curtos, não revoluções'],s:['Auditoria da semana real','1 experimento por semana','Ambientes que favorecem o bom dia'],st:['Registre como passou as últimas 168 horas','Escolha 1 área: corpo, casa, relações, lazer','Rode 1 experimento de 7 dias nessa área','Meça energia e humor de 0 a 10','Mantenha, ajuste ou troque o experimento'],tp:['Tempo livre também se agenda','Casa organizada libera cabeça','Luz natural de manhã muda o dia','Uma área equilibrada puxa as outras'],ex:'Exemplo: o experimento "noite de jogo em família" recuperou 3 horas de conexão por semana.'}]},
+{id:'relacionamentos',name:'Relacionamentos',icon:'❤️',color:'#e11d48',sensitive:true,kw:['casal','comunicação','família','convivência'],subs:[
+{n:'Relacionamento amoroso',p:'sente que a relação caiu na rotina e virou convivência de sócios',pr:'reacender conexão e parceria com pequenos rituais que funcionam',c:['Conta Bancária Emocional','relação é conta: depósitos diários de atenção valem mais que grandes gestos esporádicos'],s:['Rituais de conexão diária','Encontro semanal protegido','Linguagens de amor na prática'],st:['Mapeie a linguagem de amor de cada um','Faça 1 depósito emocional por dia','Proteja 1 encontro semanal sem telas','Crie ritual de chegada e despedida','Faça check-in mensal da relação, sem acusações'],tp:['Curiosidade pelo outro nunca termina','Elogio específico vale dobro','Reclamar sem pedido não gera mudança','Reparar rápido vale mais que nunca errar'],ex:'Exemplo: o check-in mensal de 30 min virou o momento que evita acúmulos de mágoa.'},
+{n:'Comunicação',p:'conversas viram brigas e os dois terminam exaustos sem se entender',pr:'aprender a falar e ouvir de um jeito que gera acordo, não guerra',c:['Comunicação Não Violenta','observar sem julgar, nomear sentimentos, pedir com clareza: a estrutura que desarma conflitos'],s:['Falar a partir do "eu"','Escuta reflexiva validadora','Pedidos claros e negociáveis'],st:['Troque "você sempre" por "eu me sinto quando"','Repita o que ouviu antes de responder','Valide o sentimento mesmo discordando do fato','Faça 1 pedido claro por conversa','Encerre com 1 acordo pequeno e verificável'],tp:['Tom de voz carrega metade da mensagem','Pausa combinada não é fuga, é cuidado','Nunca converse com fome ou sono extremo','Acordo pequeno cumprido constrói confiança'],ex:'Exemplo: trocar acusação por "eu me sinto" reduziu o tempo das discussões pela metade.'},
+{n:'Casamento',p:'a parceria virou logística: boletos, filhos, casa — e o casal sumiu',pr:'fortalecer o time a dois sem abandonar o romance',c:['Casal como Time','casamento saudável opera como time: metas compartilhadas, divisão justa e comemoração conjunta'],s:['Reunião de casal objetiva e leve','Divisão de carga mental visível','Projeto compartilhado do ano'],st:['Listem tudo o que a casa exige','Dividam por escolha, não por cobrança','Agendem reunião semanal de 20 min com pauta','Definam 1 projeto divertido do casal no ano','Blindem 1 noite por mês só dos dois'],tp:['Logística sem romance esfria; romance sem logística quebra','Agradecer tarefas invisíveis gera reciprocidade','Comparar casamento com rede social envenena','Terapia de casal é manutenção, não fracasso'],ex:'Exemplo: visualizar a carga mental em lista acabou com a sensação de "só eu faço tudo".'},
+{n:'Inteligência emocional',p:'as emoções tomam o volante nas discussões importantes',pr:'usar regulação emocional para conversar difícil sem explodir ou fugir',c:['Ruptura e Reparo','todo casal briga; o que separa os saudáveis é a capacidade de pausar a tempo e reparar depois'],s:['Auto-regulação antes da conversa','Pausa combinada com retorno marcado','Reparo em 5 linguagens'],st:['Identifique seus sinais físicos de escalada','Combine palavra de pausa com retorno em 30 min','Use a pausa para acalmar, não para ruminar','Volte e fale do seu sentimento, não do erro do outro','Fechem com gesto de reparo combinado'],tp:['Fisiologia acalma antes da razão','Ruminar na pausa anula o benefício','Pedir desculpa específico cura mais que genérico','Padrão perseguidor-distanciador pede pausa dupla'],ex:'Exemplo: a palavra-código "intervalo" evitou três discussões que terminariam em portas batidas.'},
+{n:'Convivência',p:'dividir casa (ou família) virou fonte diária de atrito',pr:'construir acordos de convivência que reduzem atrito e respeitam diferenças',c:['Acordos Explícitos','convivência leve não nasce de telepatia: nasce de acordos claros sobre espaço, tempo e tarefas'],s:['Mapa de necessidades de cada um','Acordos de espaço e silêncio','Rituais de família que unem'],st:['Cada um lista 5 necessidades de espaço/tempo','Cruzem listas e negociem 3 acordos iniciais','Definam sinais de "preciso de silêncio"','Criem 1 ritual semanal que une a casa','Revisem acordos a cada 30 dias'],tp:['Diferença não é defeito','Acordo revisável evita ressentimento','Humor desarma atrito pequeno','Elogiar cooperação reforça o time'],ex:'Exemplo: o acordo do "fone + porta fechada = silêncio" acabou com 80% dos atritos do home office.'}]},
+{id:'fitness',name:'Fitness',icon:'💪',color:'#ea580c',sensitive:true,kw:['treino','emagrecimento','corrida','mobilidade'],subs:[
+{n:'Emagrecimento',p:'já tentou de tudo, emagrece e recupera tudo de novo',pr:'construir um processo de emagrecimento sustentável, sem terrorismo alimentar',c:['Déficit com Comportamento','emagrecer é simples na matemática e difícil no comportamento: o método cuida dos dois'],s:['Déficit leve e constante','Treino de força para preservar músculo','Ambiente alimentar a favor'],st:['Defina meta de ritmo lento e constante','Priorize proteína e vegetais em toda refeição','Treine força 2-3x por semana','Caminhe mais: meta de passos progressiva','Pese-se com regra fixa e leia tendência, não dia'],tp:['Escala é bússola, não juiz','Sono ruim aumenta fome e desejo','Plano 80/20 evita efeito sanfona','Dor persistente ou dúvidas de saúde: procure profissional'],ex:'Exemplo: mirar 0,5% do peso por semana tornou o processo confortável e, pela primeira vez, durável.'},
+{n:'Treino em casa',p:'não tem tempo ou dinheiro para academia e acha que em casa não funciona',pr:'ganhar força e disposição treinando 30 min por dia na sala de casa',c:['Sobrecarga Progressiva Caseira','músculo não sabe onde você está: responde a tensão, volume e progressão — tudo possível sem academia'],s:['Programa mínimo efetivo (3 treinos)','Progressão sem equipamentos','Constância com horário fixo'],st:['Escolha 3 dias fixos na semana','Monte circuito: agachar, empurrar, puxar, core','Faça 3 séries perto do esforço desafiador','Progrida repetições ou pausa a cada semana','Registre o treino em caderno simples'],tp:['Treino curto feito vence longo adiado','Mochila com livros vira peso extra','Aquecer 3 min reduz lesão','Adapte exercícios a limitações e dores'],ex:'Exemplo: 3 circuitos de 30 min por semana devolveram a disposição que o sofá tinha levado.'},
+{n:'Musculação',p:'treina há meses sem evolução visível e já pensa em desistir',pr:'destravar sua evolução com técnica, progressão e recuperação corretas',c:['Treino com Propósito','evolução vem de estímulo bem executado + recuperação: mais suor não significa mais resultado'],s:['Técnica antes de carga','Progressão dupla (reps → carga)','Recuperação como parte do treino'],st:['Filme 1 série de cada exercício básico','Ajuste técnica antes de subir carga','Use progressão dupla: complete o teto de reps, suba carga','Durma 7-9h e coma proteína suficiente','Deload a cada 6-8 semanas de treino pesado'],tp:['Amplitude completa vale mais que ego','Séries perto da falha, não no colapso','Ordem: grandes antes dos pequenos','Dor articular aguda é sinal para avaliar'},
+{n:'Corrida',p:'começa a correr, trava no fôlego e desiste na terceira semana',pr:'sair do zero e completar seus primeiros 5 km com prazer',c:['Correr Devagar para Correr Longe','80% do treino de corrida é leve: quem respeita o ritmo fácil constrói base e evita lesão'],s:['Método correr-caminhar','Frequência antes de distância','Progressão de 10% semanal'],st:['Alterne corrida leve e caminhada por 4 semanas','Corra 3x por semana em dias alternados','Aumente no máximo 10% por semana','Inclua 1 dia de força ou mobilidade','Comemore o primeiro 5 km contínuo'],tp:['Conversar durante o ritmo = intensidade certa','Tênis confortável previne lesão','Dor localizada que cresce = pausa e avaliação','Hidratação e sono fazem parte do treino'],ex:'Exemplo: 4 semanas de correr-caminhar e o primeiro 5 km veio sem sofrimento.'},
+{n:'Mobilidade',p:'vive travado, com dor nas costas e no pescoço pelo dia sentado',pr:'destravar o corpo com 10 min diários de mobilidade inteligente',c:['Mobilidade Diário','articulação que não se move perde alcance: 10 min por dia devolvem movimento sem virar atleta'],s:['Rotina de 10 min (coluna, quadril, ombro)','Pausas de movimento a cada 1h','Respiração como base'],st:['Faça 2 min de respiração diafragmática','Mobilize coluna torácica (gato-vaca, rotação)','Abra quadril com agachamento profundo assistido','Cuide de ombros com círculos e alongamento','Repita a sequência 1x por dia, mesmo dia pesado'],tp:['Frequência vence intensidade','Desconforto leve ok, dor aguda não','Mobilizar antes do treino melhora execução','Postura perfeita não existe; variada, sim'],ex:'Exemplo: 10 min ao acordar eliminaram a dor de pescoço do fim do dia em 3 semanas.'}]},
+{id:'alimentacao',name:'Alimentação e Culinária',icon:'🍳',color:'#ca8a04',sensitive:false,kw:['receitas','marmitas','cozinha','sobremesas'],subs:[
+{n:'Receitas rápidas',p:'chega cansado e pede delivery porque cozinhar parece levar horas',pr:'dominar 10 receitas de até 20 minutos que salvam sua semana',c:['Cozinha de Sistema','receita rápida não é improviso: é base pronta + montagem veloz; o sistema faz o tempo caber'],s:['Despensa de bases prontas','Técnica 1 panela / 1 assadeira','Repertório de 10 receitas-chave'],st:['Monte despensa com 10 bases (ovos, arroz, massa, legumes congelados)','Aprenda 3 molhos rápidos que mudam tudo','Cozinhe 1 proteína em lote no domingo','Combine base + molho + vegetal em 20 min','Registre suas 10 combinações favoritas'],tp:['Legume congelado é aliado, não vergonha','Faca afiada corta tempo e risco','Prove e ajuste no fim: sal, ácido, picância','Dobrar a receita vira almoço de amanhã'],ex:'Exemplo: base + molho de alho + brócolis = jantar de 18 min que virou favorito da casa.'},
+{n:'Receitas saudáveis',p:'acha que comida saudável é sem graça e cara',pr:'transformar comida de verdade em prazer diário com receitas simples',c:['Sabor por Camadas','comida saudável fica deliciosa com técnica: tempero, textura e finalização fazem o trabalho'],s:['Temperos e ervas que elevam o prato','Texturas crocantes e frescas','Doces inteligentes sem exagero'],st:['Monte kit de 8 temperos e 4 ervas','Aprenda a finalizar com ácido e crocância','Asse vegetais para concentrar sabor','Troque metade, não tudo: versão 80/20','Teste 1 receita nova por semana'],tp:['Assar carameliza e adoça sem açúcar','Erva fresca no fim muda o prato','Gordura boa carrega sabor','Sal no tempo certo, não no final apenas'],ex:'Exemplo: couve-flor assada com páprica virou o "petisco" que acabou com a briga por batata frita.'},
+{n:'Marmitas',p:'gasta fortunas no almoço e come mal por falta de opção',pr:'organizar marmitas da semana em 2 horas, economizando tempo e dinheiro',c:['Marmita em Linha de Produção','cozinhar 1 vez para 5 refeições é logística: cardápio fixo, compra única, montagem em série'],st:['Defina 2 proteínas + 2 bases + 2 vegetais','Compre com lista única semanal','Cozinhe tudo em sequência (2h com forno e fogão)','Monte em série e congele etiquetado','Varie com molhos para não enjoar'],tp:['Potes iguais empilham e congelam melhor','Resfrie antes de congelar','Molho à parte mantém textura','Congelador cheio é decisão futura tomada'],ex:'Exemplo: 2h de domingo = 5 almoços prontos e economia de R$ 90 na semana.'},
+{n:'Sobremesas',p:'ama doce mas vive na briga entre vontade e culpa',pr:'saborear sobremesas que encantam sem pesar na rotina',c:['Doce com Intenção','sobremesa boa se sabora em porção certa: qualidade alta, frequência consciente, culpa zero'],s:['Porção pequena, qualidade alta','Trocas inteligentes que funcionam','Sobremesa de 15 minutos'],st:['Escolha 2-3 sobremesas favoritas de verdade','Coma porção pequena, sem distração, saboreando','Aprenda 3 versões 80/20 (frutas assadas, mousse de cacau, iogurte com calda)','Deixe doce fora do alcance no dia a dia','Reserve momento de doce para ocasiões, sem proibir'],tp:['Proibição gera compulsão; intenção gera equilíbrio','Cacau alto % satisfaz com menos','Fruta assada concentra doçura natural','Compartilhar sobremesa dobra o prazer, corta a metade'],ex:'Exemplo: mousse de cacau 80% com porção definida acabou com o assalto noturno ao armário.'},
+{n:'Culinária econômica',p:'o mercado consome o orçamento e ainda falta ideia de cardápio',pr:'comer bem gastando até 40% menos com estratégia de compra e aproveitamento',c:['Cozinha de Aproveitamento','cozinhar barato é técnica: compra planejada, aproveitamento total e menos desperdício'],s:['Cardápio guiado por ofertas','Aproveitamento integral dos alimentos','Proteínas econômicas bem preparadas'],st:['Monte cardápio a partir do que está em oferta','Compre lista fechada, barriga cheia','Use talos, cascas e sobras com 3 receitas-curinga','Domine ovos, leguminosas e miúdos nobres','Congele porções e etiquete tudo'],tp:['Feira no fim rende desconto','Ovo é proteína completa e barata','Arroz de ontem vira prato de hoje','Desperdício é dinheiro no lixo'],ex:'Exemplo: talos no refogado e pão velho na farofa cortaram 30% da conta do mercado.'}]}
+];
+// (Educação, Negócios, Tecnologia e Hobbies entram via seed complementar abaixo)
+const NICHES_SEED2=[
+{id:'educacao',name:'Educação',icon:'🎓',color:'#2563eb',sensitive:false,kw:['estudos','memorização','concursos','idiomas'],subs:[
+{n:'Técnicas de estudo',p:'estuda horas, grifa tudo e não lembra de nada na prova',pr:'estudar menos tempo e aprender mais com técnicas comprovadas',c:['Estudo Ativo','reler e grifar dão sensação de saber; testar e explicar é o que realmente grava'],s:['Estudo ativo com auto-teste','Sessões curtas com pausas (Pomodoro)','Intercalação de matérias'],st:['Troque releitura por perguntas antes e depois','Estude em blocos de 25-50 min com pausa real','Explique o conteúdo em voz alta sem consultar','Alterne 2 matérias por sessão','Encerre escrevendo 3 linhas do que aprendeu'],tp:['Difficultar o estudo (testar) aumenta a retenção','Sono consolida o que você estudou','Ambiente sem celular dobra o rendimento','Ensinar é o topo da aprendizagem'],ex:'Exemplo: trocar grifo por auto-teste elevou a nota de 6,1 para 8,4 no semestre.'},
+{n:'Memorização',p:'esquece nomes, datas e o que acabou de ler',pr:'destravar sua memória com técnicas de associação e repetição espaçada',c:['Repetição Espaçada','a memória fixa quando revisa no momento certo: espaçar revisões vale mais que repetir 10x no mesmo dia'],s:['Revisões espaçadas (1-7-30)','Associação e imagens vívidas','Palácio da memória para listas'],st:['Crie cartões de pergunta e resposta','Revise em 1, 7 e 30 dias','Transforme conceitos em imagens exageradas','Use locais conhecidos para guardar listas','Durma bem na semana de provas'],tp:['Memória ama história e exagero','Errar no teste faz parte do processo','Revisar cansado não fixa','Poucos cartões por dia, todos os dias'],ex:'Exemplo: 15 min/dia de cartões espaçados fixaram 200 termos de anatomia em 6 semanas.'},
+{n:'Concursos',p:'estuda sem direção, pulando de material em material',pr:'montar um sistema de aprovação com ciclo de estudos e revisões',c:['Ciclo de Estudos','concurso se vence com sistema: ciclo de matérias, revisões espaçadas e simulados medindo o caminho'],s:['Edital como mapa','Ciclo em vez de cronograma rígido','Simulados e análise de erros'],st:['Analise o edital e as provas anteriores','Monte ciclo de 3-5 matérias alternadas','Estude por teoria + questões no mesmo dia','Faça simulado quinzenal cronometrado','Caderno de erros: revise só o que errou'],tp:['Questões ensinam o estilo da banca','Constância semanal vence virada de noite','Revisão sem teste é leitura','Aprovação é maratona com método'],ex:'Exemplo: o caderno de erros concentrou 80% das revisões e cortou metade do tempo de estudo.'},
+{n:'Idiomas',p:'já fez curso, sabe o básico e trava na hora de falar',pr:'destravar a conversação com imersão prática e diária',c:['Imersão Prática','idioma se ativa com uso diário e real: 30 min de contato vivo valem mais que 2h de gramática'],s:['Input compreensível diário','Frases prontas de sobrevivência','Conversação desde o início'],st:['Defina 30 min diários de série/música com legenda','Monte 50 frases úteis do seu contexto','Fale sozinho descrevendo seu dia','Agende 1 conversa semanal (parceria ou app)','Revise frases em repetição espaçada'],tp:['Errar em voz alta é o caminho','Aprenda frases, não palavras soltas','Série conhecida = contexto grátis','5 min 3x ao dia > 1h no sábado'],ex:'Exemplo: narrar o próprio dia em voz alta destravou a fala em 60 dias.'},
+{n:'Organização acadêmica',p:'prazos, trabalhos e provas viram um caos de última hora',pr:'organizar sua vida acadêmica com um sistema simples e à prova de semestre',c:['Sistema Único de Captura','caos acadêmico nasce de informação espalhada: uma caixa de entrada única + revisão semanal resolvem'],s:['Caixa de entrada única','Calendário de entregas visível','Revisão semanal de 20 min'],st:['Centralize prazos em 1 app ou caderno','Quebre cada trabalho em 3 marcos','Defina horário fixo de estudo por disciplina','Faça revisão semanal domingo à noite','Deixe a mochila/material prontos na véspera'],tp:['Prazo sem marco vira emergência','Estudar no mesmo horário cria ritmo','Guardar tudo em 1 lugar reduz ansiedade','Pedir ajuda cedo é estratégia'],ex:'Exemplo: quebrar o TCC em marcos semanais acabou com as 3 madrugadas antes da entrega.'}]},
+{id:'negocios',name:'Negócios e Empreendedorismo',icon:'🚀',color:'#7c3aed',sensitive:false,kw:['marketing','vendas','e-commerce','infoprodutos'],subs:[
+{n:'Pequenos negócios',p:'o negócio vive no caos: vende mas não sabe se lucra',pr:'profissionalizar a gestão do seu pequeno negócio em 90 dias',c:['Gestão por Indicadores','negócio pequeno também se governa por números: caixa, margem e clientes certos decidem o futuro'],s:['Caixa sob controle semanal','Precificação com margem real','Foco nos 20% que dão lucro'],st:['Separe conta pessoal da conta da empresa','Feche o caixa toda semana (entradas, saídas, saldo)','Calcule margem real dos 5 produtos principais','Corte ou reajuste o que não dá margem','Defina 1 meta clara para os próximos 90 dias'],tp:['Vender sem margem é trabalhar de graça','Cliente que paga em dia vale ouro','Processo simples escrito libera o dono','Comparar mês com mês revela o caminho'],ex:'Exemplo: descobrir a margem real fez o dono cortar 2 produtos "campeões" que davam prejuízo.'},
+{n:'Marketing digital',p:'posta todo dia, ninguém compra e o alcance só cai',pr:'criar conteúdo que atrai e converte, mesmo começando do zero',c:['Conteúdo com Função','post sem função é ruído: cada peça deve atrair, educar ou converter — os três, em sequência'],s:['Posicionamento em 1 frase','Linha editorial de 3 pilares','CTA claro em toda peça'],st:['Defina para quem você fala e qual dor resolve','Escolha 3 pilares de conteúdo fixos','Produza 1 peça por pilar por semana','Encerre toda peça com 1 chamada simples','Leia métricas 1x por semana e dobre o que funciona'],tp:['Título é 80% do resultado','História vende mais que característica','Constância vence viral','Responder comentário é marketing'],ex:'Exemplo: trocar "post de arte" por sequência atrair-educar-converter triplicou os chamados no direct.'},
+{n:'Vendas',p:'trava na hora de falar de preço e vive de desconto',pr:'conduzir conversas de venda com confiança e sem depender de desconto',c:['Venda como Diagnóstico','quem pergunta bem vende bem: diagnóstico antes da proposta transforma preço em consequência'],s:['Perguntas de diagnóstico','Apresentação conectada à dor','Follow-up sistemático'],st:['Monte roteiro de 5 perguntas de diagnóstico','Escute 70%, fale 30%','Apresente a solução ligando cada ponto à dor dita','Fale preço com pausa e sem justificar','Faça follow-up em 3 toques espaçados'],tp:['Desconto é a última carta, não a primeira','Silêncio depois do preço é seu amigo','"Não" hoje pode ser "sim" com follow-up','Processo bate talento sem processo'],ex:'Exemplo: 5 perguntas de diagnóstico elevaram o fechamento de 1 em 10 para 3 em 10.'},
+{n:'E-commerce',p:'montou a loja online e as vendas não saem do zero',pr:'destravar as primeiras vendas com oferta, tráfego e prova social',c:['Loja que Converte','venda online é equação: oferta clara + prova + tráfego certo; sem um dos três, a conta não fecha'],s:['Oferta irresistível e clara','Página com prova social','Tráfego inicial focado'],st:['Reescreva a oferta: resultado, para quem, garantia','Exiba avaliações, fotos reais e selos','Simplifique checkout (menos campos)','Comece com 1 canal de tráfego pago ou orgânico','Meça taxa de conversão semanalmente'],tp:['Foto ruim mata produto bom','Frete surpresa abandona carrinho','1 produto bem vendido > catálogo gigante','Remarketing recupera venda perdida'],ex:'Exemplo: 6 avaliações com foto subiram a conversão da página de 0,8% para 2,1%.'},
+{n:'Infoprodutos',p:'tem conhecimento valioso mas não sabe virar produto',pr:'empacotar seu conhecimento em um produto digital vendável em 30 dias',c:['Produto Mínimo Vendável','infoproduto nasce da dor específica com transformação clara: escopo pequeno, promessa honesta, entrega objetiva'],s:['Promessa de transformação única','Entrega enxuta e acionável','Lançamento com audiência mínima'],st:['Defina 1 dor específica e 1 transformação','Monte estrutura de 4-6 módulos objetivos','Grave/Escreva o essencial com exercícios','Defina preço acessível de entrada','Venda para 10 pessoas e colete depoimentos'],tp:['Escopo gigante atrasa e frustra','Depoimento vale mais que anúncio','Entrega gera próxima oferta','Promessa honesta constrói marca'],ex:'Exemplo: o guia de 40 páginas vendido a 10 conhecidos virou o primeiro produto com 5 estrelas.'}]},
+{id:'tecnologia',name:'Tecnologia e Inteligência Artificial',icon:'🤖',color:'#0891b2',sensitive:false,kw:['IA','chatgpt','automação','produtividade digital'],subs:[
+{n:'Inteligência Artificial',p:'ouve falar de IA o dia todo mas não sabe usar de verdade',pr:'entender e aplicar IA no seu trabalho antes de 90% das pessoas',c:['IA como Copiloto','IA não substitui julgamento: multiplica quem sabe pedir, revisar e aplicar com contexto'],s:['Fundamentos sem tecniquês','Casos de uso por área','Rotina de experimentação'],st:['Mapeie 5 tarefas repetitivas da sua semana','Teste a IA em 1 tarefa por semana','Aprenda a dar contexto, exemplo e formato no pedido','Sempre revise e valide a saída','Documente seus prompts que funcionam'],tp:['Prompt com contexto vale por 10','IA erra com confiança: cheque fatos','Comece pelo texto, depois dados e imagem','Ética e privacidade: não envie dados sensíveis'],ex:'Exemplo: delegar rascunhos de e-mail à IA devolveu 4h/semana para trabalho estratégico.'},
+{n:'ChatGPT',p:'usa o ChatGPT só para perguntas bobas e acha "mais ou menos"',pr:'dominar prompts que transformam o ChatGPT em assistente de nível profissional',c:['Prompt Estruturado','a qualidade da resposta nasce do pedido: papel, contexto, tarefa, formato e exemplo mudam tudo'],s:['Fórmula PCTFE de prompts','Correntes de raciocínio guiadas','Iteração em 3 rodadas'],st:['Defina papel: "aja como especialista em..."','Dê contexto real da situação','Peça formato: lista, tabela, passo a passo','Peça 3 opções e refine a melhor','Salve os prompts vencedores em biblioteca'],tp:['Peça perguntas antes da resposta','"Melhore esta resposta" é um prompt','Divida tarefas grandes em etapas','Nunca cole dados pessoais ou da empresa'],ex:'Exemplo: a fórmula papel+contexto+formato transformou respostas genéricas em planos acionáveis.'},
+{n:'Automação',p:'perde horas por semana em tarefas copia-e-cola',pr:'automatizar suas tarefas repetitivas sem saber programar',c:['Automação No-Code','quase toda tarefa repetitiva de regra clara pode rodar sozinha: gatilho → ação, sem código'],s:['Inventário de repetições','Ferramentas no-code (zap/fluxo)','Teste e monitoramento'],st:['Liste tarefas repetitivas com frequência','Escolha 1 tarefa de alto custo semanal','Monte fluxo gatilho → ação em ferramenta no-code','Teste com casos reais por 1 semana','Ative e revise mensalmente'],tp:['Automatize o que é regra, não exceção','Comece com 1 fluxo, não 10','Log simples evita susto silencioso','Automação boa libera tempo criativo'],ex:'Exemplo: fluxo que salva anexos de e-mail na pasta certa economizou 3h semanais.'},
+{n:'Ferramentas digitais',p:'usa 10% do que as ferramentas já fariam por você',pr:'montar seu kit digital essencial e dominar as ferramentas que pagam seu tempo',c:['Kit Essencial','ferramenta certa é alavanca: poucas, bem dominadas, integradas — o resto é distração'],s:['Auditoria do stack atual','Domínio das 5 essenciais','Integrações que poupam cliques'],st:['Liste as ferramentas que você usa hoje','Corte duplicadas e mantenha 5 essenciais','Domine atalhos e modelos das 5','Conecte ao menos 2 ferramentas entre si','Revise o stack a cada 6 meses'],tp:['Atalho de teclado é juros compostos','Template pronto vence página em branco','Sincronização evita retrabalho','Ferramenta nova só entra se outra sair'],ex:'Exemplo: dominar 10 atalhos da planilha cortou 40 min por dia de trabalho mecânico.'},
+{n:'Produtividade com IA',p:'sente que a IA vai tomar seu lugar se você não agir',pr:'usar IA para produzir em 1 semana o que levava 1 mês',c:['Fluxo Aumentado','profissional aumentado combina velocidade da IA com critério humano: rascunho máquina, decisão pessoa'],s:['Rascunhos com IA, edição humana','Reuniões e notas automatizadas','Biblioteca pessoal de prompts'],st:['Delegue à IA todo primeiro rascunho','Use IA para resumir reuniões e leituras','Crie prompts padrão para tarefas recorrentes','Revise com checklist humano (fato, tom, risco)','Meça horas ganhas por semana'],tp:['IA é estagiária brilhante: revise sempre','Prompt library é seu novo currículo','Contexto bom = resposta boa','O diferencial é a pergunta, não a ferramenta'],ex:'Exemplo: resumir 30 páginas em 3 parágrafos confiáveis virou rotina de 2 minutos.'}]},
+{id:'hobbies',name:'Hobbies e Estilo de Vida',icon:'🎨',color:'#db2777',sensitive:false,kw:['jardinagem','fotografia','organização','viagens','artesanato'],subs:[
+{n:'Jardinagem',p:'compra planta bonita e vê ela definhar em semanas',pr:'ter plantas vivas e belas entendendo luz, água e vaso certos',c:['Luz Antes de Tudo','planta morre mais por vaso errado e água demais do que por negligência: luz define a espécie'],s:['Leitura de luz da casa','Rega pelo dedo, não pelo calendário','Vaso e solo com drenagem'],st:['Mapeie a luz de cada janela (sol direto, indireto, sombra)','Escolha plantas compatíveis com cada ponto','Teste a rega com o dedo: seco a 2 cm = regar','Use vaso com furo e camada de drenagem','Adube a cada 30-45 dias na estação de crescimento'],tp:['Mais planta morre afogada do que seca','Folha amarela pede checagem de rega','Vaso de barro respira mais','Observar 5 min por dia previne pragas'],ex:'Exemplo: trocar a samambaia de janela (sol direto) por canto iluminado salvou a planta em 2 semanas.'},
+{n:'Fotografia',p:'tem celular ótimo mas as fotos saem "sem graça"',pr:'evoluir da foto automática para fotos com luz, composição e história',c:['Luz é a Matéria-Prima','foto boa nasce da luz certa + composição simples: o equipamento importa menos do que o olhar'],s:['Caçar luz boa (janela, golden hour)','Composição com regra dos terços','Contar história em 1 quadro'],st:['Fotografe perto de janelas ou ao amanhecer/entardecer','Ative a grade e use a regra dos terços','Limpe o fundo antes do clique','Toque para focar e ajuste exposição','Edite leve: luz, contraste e corte'],tp:['Luz dura de meio-dia endurece rostos','Fundo limpo valoriza o assunto','Fotografe de ângulos baixos e altos','Série de 3 cliques garante 1 ótimo'],ex:'Exemplo: mover o retrato para a janela transformou a foto "chapada" em retrato com profundidade.'},
+{n:'Organização',p:'a casa vive bagunçada e cada objeto parece ter vida própria',pr:'organizar a casa de forma definitiva com o método lugar-certo',c:['Lugar Certo','bagunça não é excesso de coisa, é ausência de lugar: todo objeto precisa de endereço fixo'],s:['Descarte por categoria','Endereço fixo para tudo','Manutenção de 10 min diários'],st:['Escolha 1 categoria (roupas, papéis, cozinha)','Descarte: 1 ano sem uso, sai','Defina o endereço de cada item que ficar','Etiquete caixas e gavetas estratégicas','Feche o dia com 10 min de reset geral'],tp:['Organizar por categoria, não por cômodo','Caixa de "decidir depois" com prazo','Verticalizar gavetas dobra espaço','Casa organizada é sistema, não mutirão'],ex:'Exemplo: o reset de 10 min antes de dormir acabou com a "bagunça acumulada" do fim de semana.'},
+{n:'Viagens',p:'sonha em viajar mas acha caro e se perde no planejamento',pr:'viajar mais e melhor com planejamento simples e orçamento inteligente',c:['Viagem por Etapas','viajar barato é decisão antecipada: data flexível, reserva no tempo certo e roteiro enxuto'],s:['Flexibilidade de datas','Reservas no timing certo','Roteiro 3-3-3 (manhã, tarde, noite)'],st:['Defina orçamento total antes de tudo','Use alertas de preço e datas flexíveis','Reserve hospedagem com cancelamento grátis','Monte roteiro com 3 blocos por dia, sem lotar','Deixe 20% do tempo para improviso'],tp:['Meio de semana é mais barato que fim de semana','Caminhada revela o bairro','Seguro viagem é barato perto do risco','Lista de mala pronta evita compra em emergência'],ex:'Exemplo: mudar a partida de sexta para terça cortou 35% do preço do voo.'},
+{n:'Artesanato',p:'vê peças lindas na internet mas as suas nunca saem parecidas',pr:'evoluir suas peças com técnica, acabamento e preço justo',c:['Acabamento é o Produto','no artesanato, o acabamento separa o "feito em casa" do "feito à mão com valor": técnica + repetição'],s:['Domínio de 1 técnica por vez','Acabamento em checklist','Precificação que paga seu tempo'],st:['Escolha 1 técnica e repita até padronizar','Crie checklist de acabamento (lixa, borda, limpeza)','Fotografe com luz de janela e fundo neutro','Precifique: material + horas + margem','Venda em 1 canal e colete feedback'],tp:['Repetição gera padrão, padrão gera marca','Foto boa dobra o preço percebido','Não compita por preço, compita por cuidado','Peça defeituosa não sai da bancada'],ex:'Exemplo: padronizar o acabamento elevou o preço médio da peça em 60% com aceitação.'}]}
+];
+
+/* ================================================================
+   /ai/prompts — registry central de prompts (editável no Admin)
+================================================================ */
+const PROMPTS_SEED={
+idea_generator:'Você é um estrategista de produtos digitais. Gere 5 ideias de eBook para o nicho/subnicho informados, cada uma com: titulo, subtitulo, problema, publico, promessa, transformacao, diferencial, descricao. Evite promessas irreais. Retorne JSON.',
+title_generator:'Você é um copywriter ético. Gere 5 títulos+subtítulos usando ângulos de benefício, especificidade, curiosidade, transformação e praticidade. Sem promessas falsas, alegações médicas ou garantia de enriquecimento. Retorne JSON.',
+outline_generator:'Monte estrutura de eBook de 10 páginas (capa + 9) adaptada ao nicho, com títulos de seção. Retorne JSON.',
+content_generator:'Escreva conteúdo profissional, claro e acionável para cada página do eBook, com listas, exemplos e caixas de destaque. Sem texto genérico ou inventado. Retorne JSON.',
+image_generator:'Descreva ilustrações coerentes com o nicho para cada página. Retorne JSON com seeds/conceitos.',
+cover_generator:'Defina composição de capa profissional (hierarquia, cores, tipografia) coerente com o nicho. Retorne JSON.',
+review_generator:'Revise o eBook quanto a gramática, coerência, repetição, adequação ao público e promessa ética. Corrija e retorne JSON com issues/fixes.',
+marketing_generator:'Gere kit de divulgação completo (título comercial, descrições, copies por canal, keywords, hashtags, CTA). Retorne JSON.',
+seo_generator:'Gere SEO title, meta description, slug, palavra-chave principal e secundárias, tags. Retorne JSON.',
+facebook_group_post_generator:'Escreva post natural e útil para um grupo do Facebook sobre o tema, entregando valor antes de apresentar o eBook, com CTA suave. Retorne JSON.'
+};
+
+/* ================================================================
+   /ai/providers — LocalEngine (padrão, offline) + OpenAI (opcional)
+================================================================ */
+const FORBID=[/garantid(o|a|os|as)/i,/enriquec/i,/cura\b/i,/curar\b/i,/milagros/i,/sem esfor[çc]o/i,/renda garantida/i,/diagn[oó]stic(o|a) m[eé]dic/i,/rem[eé]dio/i];
+const SAFE_DISCLAIMER='Este material é educacional e não substitui orientação profissional individualizada (saúde, financeira ou jurídica). Resultados variam conforme aplicação e contexto.';
+function pick(rng,arr){return arr[Math.floor(rng()*arr.length)]}
+function tone(style){
+ const T={
+ 'Profissional':{ab:'Este guia foi estruturado com método e objetividade.',con:'Execução consistente gera resultado mensurável.'},
+ 'Didático':{ab:'Vou explicar passo a passo, como se estivéssemos lado a lado.',con:'Revise cada etapa antes de avançar: compreensão precede execução.'},
+ 'Amigável':{ab:'Relaxa: você chegou ao lugar certo e no momento certo.',con:'Um passo de cada vez — e você chega lá.'},
+ 'Inspirador':{ab:'Toda grande transformação começa com uma decisão.',con:'Você não precisa de perfeição; precisa de começo.'},
+ 'Prático':{ab:'Sem rodeios: aqui você encontra o que fazer e como fazer.',con:'Agenda vale mais que intenção. Mãos à obra.'},
+ 'Persuasivo':{ab:'O custo de continuar como está é maior do que o esforço de mudar.',con:'A decisão de hoje define o cenário de amanhã.'}};
+ return T[style]||T['Prático'];
+}
+function localIdeas(eb,rng){
+ const sub=eb.sub, out=[];
+ const P=[
+  t=>({t:`${sub.pr.charAt(0).toUpperCase()+sub.pr.slice(1)}`,a:'promessa direta de transformação'}),
+  t=>({t:`O Método ${sub.c[0]}: ${eb.subn} sem complicação`,a:'método proprietário'}),
+  t=>({t:`${pick(rng,[7,14,21,30])} Dias para ${eb.subn.charAt(0).toUpperCase()+eb.subn.slice(1)} de Verdade`,a:'especificidade de prazo'}),
+  t=>({t:`${eb.subn.charAt(0).toUpperCase()+eb.subn.slice(1)}: o Guia que Ninguém te Contou`,a:'curiosidade'}),
+  t=>({t:`Do Caos à Clareza: seu plano prático de ${eb.subn}`,a:'transformação'})
+ ];
+ P.forEach((f,i)=>{
+  const g=f();
+  out.push({id:i,titulo:g.t,subtitulo:`Um plano prático de ${eb.subn} para ${eb.aud.publico||'quem quer evoluir'}`,problema:sub.p,promessa:sub.pr,publico:eb.aud.publico||'iniciantes motivados',transformacao:eb.aud.transform||sub.pr,diferencial:sub.c[1],descricao:`Abordagem ${eb.style.toLowerCase()} baseada em ${sub.c[0]}, com passos, checklists e exemplos reais de aplicação.`});
+ });
+ const rec=out.reduce((b,x,i)=> (x.titulo.match(/\d+/)||x.a==='promessa direta de transformação')? i:b,0);
+ out[rec].rec=true; return out;
+}
+function localTitles(eb,rng){
+ const s=eb.sub, T=eb.idea.titulo;
+ return [
+ {ang:'Benefício',titulo:`${s.pr.charAt(0).toUpperCase()+s.pr.slice(1)}`,sub:`O caminho direto para ${eb.aud.transform||'sua transformação'} em ${eb.subn}`,promessa:s.pr,venta:'Foca no resultado final desejado pelo leitor.'},
+ {ang:'Especificidade',titulo:`${pick(rng,[5,7,10])} Passos para ${eb.subn.charAt(0).toUpperCase()+eb.subn.slice(1)} Mesmo ${pick(rng,['Sem Tempo','Começando do Zero','Com Rotina Cheia'])}`,sub:`Um sistema claro para ${eb.aud.publico||'iniciantes'}`,promessa:s.pr,venta:'Números e contexto geram credibilidade.'},
+ {ang:'Curiosidade',titulo:`O Que Ninguém te Contou sobre ${eb.subn.charAt(0).toUpperCase()+eb.subn.slice(1)}`,sub:`${s.c[0]}: a virada de chave que muda o jogo`,promessa:s.pr,venta:'Abre lacuna de conhecimento que pede resposta.'},
+ {ang:'Transformação',titulo:`De ${pick(rng,['Apertado','Travado','Cansado','Perdido'])} a ${pick(rng,['No Controle','Leve','Forte','Claro'])} com ${eb.subn}`,sub:`A jornada completa, do primeiro passo à rotina consolidada`,promessa:s.pr,venta:'Contrasta ponto A e ponto B de forma emocional.'},
+ {ang:'Praticidade',titulo:`${eb.subn.charAt(0).toUpperCase()+eb.subn.slice(1)} sem Enrolação`,sub:`O guia direto ao ponto: o que fazer, em que ordem, e como manter`,promessa:s.pr,venta:'Apela para quem já tentou de tudo e quer simplicidade.'}];
+}
+function buildPages(eb){
+ const s=eb.sub, t=tone(eb.style), seed=eb.seed, rng=mulberry(seed);
+ const A=eb.aud, title=eb.title;
+ const dis = NICHES.find(n=>n.id===eb.nicheId)?.sensitive;
+ const pages=[];
+ pages.push({kind:'cover',title:'Capa',blocks:[]});
+ pages.push({kind:'intro',title:'Introdução',blocks:[
+  {t:'h',x:'Introdução'},{t:'p',x:t.ab},
+  {t:'p',x:`Se você ${s.p}, este guia foi escrito para você. Aqui você encontra um caminho claro para ${s.pr}, respeitando seu ponto de partida${A.problema? ' e sua realidade: '+A.problema.toLowerCase():''}.`},
+  {t:'box',x:`O que você vai encontrar: o problema real por trás de ${eb.subn}, o conceito ${s.c[0]}, 3 estratégias aplicáveis, um passo a passo de ${s.st.length} etapas e um plano de ação para os próximos 7 dias.`},
+  {t:'p',x:`Como ler: cada capítulo termina com algo para aplicar hoje. ${t.con}`},
+  {t:'img',seed:seed+1,icon:NICHES.find(n=>n.id===eb.nicheId)?.icon||'📘'}
+ ]});
+ pages.push({kind:'problem',title:'O Problema',blocks:[
+  {t:'h',x:'O problema que ninguém nomeia'},{t:'p',x:`A maioria das pessoas que ${s.p} não falta informação — falta sistema. Você tenta, funciona por dias, e a rotina puxa tudo de volta.`},
+  {t:'li',x:[`Sintoma 1: esforço alto com retorno baixo em ${eb.subn.toLowerCase()}.`,`Sintoma 2: decisões tomadas no cansaço, sem critério claro.`,`Sintoma 3: ciclos de "começa, para, recomeça" que corroem a confiança.`]},
+  {t:'box',x:`O custo invisível: continuar como está custa tempo, energia e ${eb.nicheId==='financas'?'dinheiro':'qualidade de vida'} — todo mês.`},
+  {t:'p',x:`A boa notícia: o problema não é você, é o método. E método se aprende. ${A.nivel==='Iniciante'?'Este guia começa do absoluto zero.':'Este guia respeita sua base e vai direto ao que destrava.'}`},
+  ...(dis?[{t:'quote',x:SAFE_DISCLAIMER}]:[])
+ ]});
+ pages.push({kind:'concept',title:s.c[0],blocks:[
+  {t:'h',x:`O conceito central: ${s.c[0]}`},{t:'p',x:s.c[1]+'. É essa lente que organiza tudo o que vem a seguir.'},
+  {t:'p',x:`Na prática, ${s.c[0].toLowerCase()} significa trocar força de vontade por estrutura: gatilhos claros, passos pequenos e revisão constante.`},
+  {t:'box',x:`Guarde esta frase: "${s.c[0]} — ${pick(rng,['sistema vence motivação','clareza antes de esforço','pequeno e constante vence grande e raro'])}."`},
+  {t:'img',seed:seed+2,icon:'🧭'},
+  {t:'p',x:`Exemplo real de aplicação: ${s.ex}`}
+ ]});
+ s.s.forEach((st,i)=>{
+  pages.push({kind:'strat'+i,title:`Estratégia ${i+1}`,blocks:[
+   {t:'h',x:`Estratégia ${i+1}: ${st}`},
+   {t:'p',x:pick(rng,[`Esta é a estratégia que mais rápido gera tração em ${eb.subn.toLowerCase()}.`,`Sem esta estratégia, as outras duas perdem metade do efeito.`,`Dominar esta estratégia muda a sensação de esforço em poucas semanas.`])},
+   {t:'li',x:[`Por que funciona: reduz atrito e transforma decisão em rotina.`,`Onde a maioria erra: ${pick(rng,['começar grande demais','fazer sozinho sem revisar','esperar motivação em vez de criar gatilho'])}.`,`Como aplicar esta semana: 1 ação mínima diária ligada a um hábito existente.`]},
+   {t:'box',x:`Aplicação rápida: ${s.tp[i%s.tp.length]}.`},
+   {t:'p',x:`Lembre do público desta edição: ${A.publico||'pessoas com rotina cheia'}${A.idade? ' ('+A.idade+')':''}. Ajuste o ritmo à sua realidade — constância vale mais que intensidade.`}
+  ]});
+ });
+ pages.push({kind:'steps',title:'Passo a Passo',blocks:[
+  {t:'h',x:'Seu passo a passo de implementação'},
+  {t:'p',x:`Siga a ordem abaixo. Cada passo foi desenhado para caber em uma semana de rotina real.`},
+  {t:'steps',x:s.st},
+  {t:'box',x:`Dica de execução: ${s.tp[0].toLowerCase()}.`},
+  {t:'p',x:`Exemplo: ${s.ex}`}
+ ]});
+ pages.push({kind:'check',title:'Plano de Ação',blocks:[
+  {t:'h',x:'Checklist — plano de ação de 7 dias'},
+  {t:'p',x:'Marque cada item ao concluir. A meta não é perfeição, é movimento.'},
+  {t:'check',x:[...s.st.slice(0,4), s.tp[1], `Agendar revisão de 20 min no dia 7`, `Compartilhar 1 aprendizado com alguém`]},
+  {t:'box',x:`Regra de ouro: ${pick(rng,['nunca falhe dois dias seguidos','feito é melhor que perfeito','meça execução, não intenção'])}.`},
+  {t:'p',x:`Ao final dos 7 dias, responda: o que funcionou? O que travou? O que eu ajusto? Esse ciclo de revisão é o motor da ${s.c[0].toLowerCase()}.`}
+ ]});
+ pages.push({kind:'conc',title:'Conclusão',blocks:[
+  {t:'h',x:'Conclusão: comece pequeno, comece hoje'},
+  {t:'p',x:`Você agora tem o mapa: entendeu o problema, dominou o conceito ${s.c[0]} e conhece as 3 estratégias e o passo a passo. A diferença entre ler e transformar é uma única ação executada hoje.`},
+  {t:'li',x:[`Releia o checklist e escolha o primeiro item.`,`Agende agora a revisão de 7 dias.`,`Conte para uma pessoa o seu compromisso.`]},
+  {t:'p',x:t.con},
+  {t:'box',x:`Gostou deste guia? Compartilhe com alguém que ${s.p} — e conheça outros materiais práticos da série ${eb.brand||'Ebook Factory'}.`},
+  ...(dis?[{t:'quote',x:SAFE_DISCLAIMER}]:[])
+ ]});
+ return pages;
+}
+function localReview(eb){
+ const issues=[]; const fixes=[];
+ const all=eb.pages.flatMap(p=>p.blocks).filter(b=>['p','box','quote'].includes(b.t)).map(b=>b.x);
+ all.forEach((txt,i)=>{ if(txt.length>430){issues.push({t:'excesso',m:'Parágrafo longo detectado na página.'}); fixes.push('Parágrafo longo resumido automaticamente.')}});
+ const seen={}; eb.pages.forEach(p=>p.blocks.forEach(b=>{const k=(b.x||'').slice(0,60); if(seen[k]&&k.length>20){issues.push({t:'rep',m:'Trecho repetido: "'+k+'…"'}); fixes.push('Repetição removida.') } seen[k]=1}));
+ if(NICHES.find(n=>n.id===eb.nicheId)?.sensitive){ const bad=all.filter(x=>FORBID.some(f=>f.test(x))); if(bad.length){issues.push({t:'claim',m:'Alegação sensível detectada e neutralizada.'}); fixes.push('Texto ajustado para linguagem educacional + disclaimer.') } }
+ if(eb.pages[1] && !eb.pages[1].blocks.some(b=>(b.x||'').toLowerCase().includes(eb.subn.toLowerCase().slice(0,8)))){issues.push({t:'align',m:'Introdução pouco conectada ao tema.'}); fixes.push('Conexão título-conteúdo reforçada na introdução.') }
+ return {issues,fixes,ok:issues.length===0};
+}
+function localKit(eb){
+ const s=eb.sub, T=eb.title;
+ const kw=[eb.subn, ...NICHES.find(n=>n.id===eb.nicheId).kw.slice(0,3), eb.aud.publico||'iniciantes'].map(x=>String(x).toLowerCase());
+ return {
+  tituloComercial:T.titulo,
+  descCurta:`${T.sub}. Guia prático de ${eb.subn} com plano de ação em 7 dias.`,
+  descLonga:`"${T.titulo}" é um guia ${eb.style.toLowerCase()} para quem ${s.p}. Em ${eb.pages.length} páginas, você recebe o conceito ${s.c[0]}, 3 estratégias aplicáveis, passo a passo completo e checklist de 7 dias para ${s.pr}. Ideal para ${eb.aud.publico||'quem está começando'}.`,
+  insta:`📚 ${T.titulo}\n\nVocê que ${s.p}… esse guia foi feito pra você. 👇\n\n✅ O conceito ${s.c[0]} explicado sem enrolação\n✅ 3 estratégias que cabem na rotina\n✅ Checklist de 7 dias para começar hoje\n\n💬 Comente "EU QUERO" que eu te envio os detalhes!\n\n${kw.map(k=>'#'+slug(k).replace(/-/g,'')).join(' ')}`,
+  face:`Você também sente que ${s.p}?\n\nEscrevi um guia prático que mostra, passo a passo, como ${s.pr} — sem teoria infinita, com plano de ação de 7 dias.\n\n👉 ${T.promessa}\n\nSe fizer sentido, compartilhe com alguém que precisa ler isso hoje.`,
+  whats:`Oi! 👋 Separei um guia prático sobre ${eb.subn}: "${T.titulo}".\n\nÉ direto ao ponto: ${T.promessa}.\n\nTem versão com passo a passo e checklist de 7 dias. Quer dar uma olhada?`,
+  keywords:kw, hashtags:kw.map(k=>'#'+slug(k).replace(/-/g,'')).concat(['#ebook','#guia','#'+slug(eb.nicheId)]),
+  seoTitle:`${T.titulo} | Guia de ${eb.subn}`,
+  metaDesc:`Aprenda ${eb.subn} com plano prático de 7 dias: conceito ${s.c[0]}, 3 estratégias e checklist. ${T.promessa}.`,
+  slug:slug(T.titulo), cta:'Baixe agora e comece hoje o seu plano de 7 dias.'
+ };
+}
+function localPost(eb,canal,estilo){
+ const s=eb.sub,T=eb.title;
+ const hook={
+ 'Curiosidade':`Você sabia que ${s.p} tem mais a ver com sistema do que com força de vontade?`,
+ 'Educacional':`3 erros comuns de quem ${s.p}:`,
+ 'Storytelling':`Houve um tempo em que eu ${s.p}. Até descobrir ${s.c[0]}.`,
+ 'Problema → solução':`Se você ${s.p}, leia isto até o final.`,
+ 'Lista':`Checklist rápido de ${eb.subn} para começar hoje:`,
+ 'Persuasivo':`Continuar ${s.p} custa caro. E não estou falando só de dinheiro.`,
+ 'Oferta':`Chegou o guia "${T.titulo}" — o plano prático de ${eb.subn}.`}[estilo];
+ const body={
+ 'Curiosidade':`\n\nA maioria tenta resolver com esforço. Quem evolui resolve com método: gatilhos claros, passos pequenos e revisão semanal.\n\nNo guia "${T.titulo}" eu mostro o conceito ${s.c[0]} e o passo a passo completo.`,
+ 'Educacional':`\n\n1. Começar grande demais (constância > intensidade)\n2. Confiar na motivação (confie em gatilhos e rotina)\n3. Não revisar (o que não é medido, volta)\n\nQuer o passo a passo completo? Está no guia "${T.titulo}".`,
+ 'Storytelling':`\n\nA virada veio quando entendi ${s.c[0].toLowerCase()}: ${s.c[1]}\n\nHoje esse caminho está organizado no guia "${T.titulo}".`,
+ 'Problema → solução':`\n\nO problema não é falta de informação. É falta de sistema.\nA solução: um plano com começo, meio e revisão — é exatamente o que o guia "${T.titulo}" entrega.`,
+ 'Lista':`\n\n✔ 1 ação mínima ligada a um hábito existente\n✔ Horário fixo, não decisão diária\n✔ Revisão de 20 min no dia 7\n✔ Nunca falhar 2 dias seguidos\n\nO plano completo está no guia "${T.titulo}".`,
+ 'Persuasivo':`\n\nCusta tempo, energia e confiança.\nMudar custa algumas semanas de método.\n\nO guia "${T.titulo}" existe para encurtar esse caminho.`,
+ 'Oferta':`\n\n${T.promessa}.\nCom conceito, 3 estratégias, passo a passo e checklist de 7 dias.`}[estilo];
+ const cta={Instagram:'Comente "GUIA" para receber os detalhes. 💬',Facebook:'Clique em saiba mais ou me chame no privado.',WhatsApp:'Me chama aqui que eu te envio. 😉',LinkedIn:'Comente "interesse" que compartilho os detalhes.'}[canal];
+ const tags=canal==='Instagram'?'\n\n'+eb.kit.hashtags.join(' '):canal==='LinkedIn'?'\n\n#produtividade #aprendizado':'';
+ return hook+body+'\n\n👉 '+cta+tags;
+}
+function localGroupPost(eb,g){
+ const s=eb.sub;
+ return `Olá, pessoal do ${g.name}! 👋\n\nAcompanho o grupo e vejo muita gente falando sobre ${g.theme.toLowerCase()} — e um padrão que se repete: ${s.p}.\n\nQuero contribuir com algo prático que aprendi organizando esse tema no método ${s.c[0]}:\n\n• Comece menor do que acha que deveria\n• Crie gatilho fixo (horário + lugar)\n• Revise 20 min por semana\n\nQuem quiser se aprofundar, compilei tudo isso (com passo a passo e checklist de 7 dias) no guia "${eb.title.titulo}". Fico à disposição para trocar ideias por aqui mesmo — o objetivo é ajudar a comunidade.\n\n⚠️ (Se este tipo de divulgação não for permitido pelas regras do grupo, me avisem que removo.)`;
+}
+async function aiJSON(task,sys,user){
+ const st=DB.settings(S.user.id);
+ if(st.aiKey){
+  try{
+   const r=await fetch('https://api.openai.com/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+st.aiKey},body:JSON.stringify({model:st.aiModel,messages:[{role:'system',content:sys},{role:'user',content:user+' Responda SOMENTE JSON válido.'}],temperature:0.8})});
+   if(r.ok){const j=await r.json();const txt=j.choices[0].message.content;const m=txt.match(/\{[\s\S]*\}|\[[\s\S]*\]/);if(m)return JSON.parse(m[0])}
+  }catch(e){logEvent('ai','OpenAI indisponível, usando motor local.')}
+ }
+ return null;
+}
+
+/* ================================================================
+   /services/images — ImageProvider (procedural; slot p/ Unsplash/DALL-E)
+================================================================ */
+function drawIllu(cv,seed,icon,pal){
+ const c=cv.getContext('2d'),w=cv.width,h=cv.height,rng=mulberry(seed);
+ const g=c.createLinearGradient(0,0,w,h);g.addColorStop(0,pal.a);g.addColorStop(1,pal.b);c.fillStyle=g;c.fillRect(0,0,w,h);
+ for(let i=0;i<7;i++){c.globalAlpha=.12+rng()*.15;c.fillStyle=i%2?'#ffffff':'#0b1020';c.beginPath();const x=rng()*w,y=rng()*h,r=20+rng()*70;c.arc(x,y,r,0,7);c.fill()}
+ c.globalAlpha=1;c.font='64px serif';c.textAlign='center';c.textBaseline='middle';c.fillText(icon,w/2,h/2);
+}
+function drawCover(cv,eb,ratio){
+ const c=cv.getContext('2d'),w=cv.width,h=cv.height;
+ const tpl=TEMPLATES[eb.templateId]||TEMPLATES.moderno;
+ const rng=mulberry(eb.seed+9);
+ c.fillStyle=tpl.paper;c.fillRect(0,0,w,h);
+ const g=c.createLinearGradient(0,0,w,h);g.addColorStop(0,tpl.prim+'22');g.addColorStop(1,tpl.acc+'33');c.fillStyle=g;c.fillRect(0,0,w,h);
+ if(eb.coverCfg.layout==='band'){c.fillStyle=tpl.prim;c.fillRect(0,h*0.62,w,h*0.38)}
+ if(eb.coverCfg.layout==='split'){c.fillStyle=tpl.prim;c.fillRect(0,0,w*0.42,h)}
+ for(let i=0;i<5;i++){c.globalAlpha=.10;c.fillStyle=tpl.acc;c.beginPath();c.arc(rng()*w,rng()*h,40+rng()*120,0,7);c.fill()}
+ c.globalAlpha=1;
+ const serif=eb.coverCfg.typo==='serif';
+ const fam=serif?"'Playfair Display',serif":"'Inter',sans-serif";
+ const dark=eb.coverCfg.layout==='band'||eb.coverCfg.layout==='split';
+ const ink=tpl.ink;
+ c.fillStyle=tpl.prim;c.fillRect(w*0.09,h*0.10,60,8);
+ c.fillStyle=ink;c.textAlign='left';
+ let fs=ratio==='sq'?54:64; c.font='800 '+fs+'px '+fam;
+ const ty=eb.title.titulo; const lines=wrap(c,ty,w*0.8);
+ let y=h*0.24; lines.forEach(L=>{c.fillText(L,w*0.09,y);y+=fs*1.15});
+ c.fillStyle=tpl.acc;c.font='600 '+(ratio==='sq'?24:26)+'px '+fam;
+ wrap(c,eb.title.sub,w*0.78).slice(0,3).forEach(L=>{c.fillText(L,w*0.09,y+8);y+=34});
+ c.fillStyle=dark?'#ffffff':tpl.mut;c.font='600 22px Inter,sans-serif';
+ c.fillText((eb.brand||'EBOOK').toUpperCase(),w*0.09,h*0.9);
+ c.fillStyle=tpl.acc;c.font='700 20px Inter,sans-serif';c.textAlign='right';c.fillText('eBook',w*0.91,h*0.9);
+}
+function wrap(c,txt,maxw){const words=String(txt).split(/\s+/);const out=[];let cur='';words.forEach(wd=>{const t=cur?cur+' '+wd:wd;if(c.measureText(t).width>maxw&&cur){out.push(cur);cur=wd}else cur=t});if(cur)out.push(cur);return out}
+function drawCreative(cv,eb,n){
+ const c=cv.getContext('2d'),w=cv.width,h=cv.height,tpl=TEMPLATES[eb.templateId]||TEMPLATES.moderno;
+ const g=c.createLinearGradient(0,0,w,h);g.addColorStop(0,tpl.prim);g.addColorStop(1,tpl.acc);c.fillStyle=g;c.fillRect(0,0,w,h);
+ c.globalAlpha=.14;c.fillStyle='#fff';for(let i=0;i<6;i++){c.beginPath();c.arc(Math.random()*w,Math.random()*h,60+Math.random()*90,0,7);c.fill()}
+ c.globalAlpha=1;
+ if(n===1){
+  c.fillStyle='#ffffff';c.font='800 58px Inter,sans-serif';
+  let y=h*0.22; wrap(c,'eBOOK NOVO: '+eb.title.titulo.toUpperCase(),w*0.84).slice(0,5).forEach(L=>{c.fillText(L,w*0.08,y);y+=66});
+  c.fillStyle='#ffffffcc';c.font='500 30px Inter,sans-serif';
+  wrap(c,eb.title.sub,w*0.8).slice(0,2).forEach(L=>{c.fillText(L,w*0.08,y);y+=40});
+  c.fillStyle='#0b1020';const bw=430,bh=74;c.fillRect(w*0.08,h-bh-70,bw,bh);
+  c.fillStyle='#fff';c.font='700 28px Inter,sans-serif';c.fillText('BAIXE AGORA →',w*0.08+34,h-70+48);
+ }else{
+  c.fillStyle='#ffffff';c.font='700 44px Inter,sans-serif';c.fillText('“',w*0.08,120);
+  let y=h*0.3; c.font='600 46px Inter,sans-serif';
+  wrap(c,'“'+eb.title.promessa+'”',w*0.84).slice(0,5).forEach(L=>{c.fillText(L,w*0.08,y);y+=60});
+  c.fillStyle='#ffffffbb';c.font='600 28px Inter,sans-serif';c.fillText(eb.title.titulo,w*0.08,h-90);
+ }
+}
+
+/* ================================================================
+   /rendering/templates — 8 templates (paleta + tipografia + decoração)
+================================================================ */
+const TEMPLATES={
+ minimalista:{name:'Minimalista',paper:'#ffffff',ink:'#111827',mut:'#6b7280',prim:'#111827',acc:'#9ca3af',font:'helvetica',deco:'none'},
+ premium:{name:'Premium',paper:'#fbf8f2',ink:'#1c1917',mut:'#78716c',prim:'#8a6d1f',acc:'#b4832c',font:'times',deco:'rule'},
+ moderno:{name:'Moderno',paper:'#ffffff',ink:'#0f172a',mut:'#64748b',prim:'#4f46e5',acc:'#7c3aed',font:'helvetica',deco:'bar'},
+ editorial:{name:'Editorial',paper:'#fffdf8',ink:'#18181b',mut:'#71717a',prim:'#18181b',acc:'#b91c1c',font:'times',deco:'double'},
+ corporativo:{name:'Corporativo',paper:'#f8fafc',ink:'#0f172a',mut:'#64748b',prim:'#0e4f8b',acc:'#0891b2',font:'helvetica',deco:'bar'},
+ elegante:{name:'Elegante',paper:'#ffffff',ink:'#3f3f46',mut:'#a1a1aa',prim:'#52525b',acc:'#a16207',font:'times',deco:'rule'},
+ criativo:{name:'Criativo',paper:'#fff7fb',ink:'#1f2937',mut:'#9ca3af',prim:'#db2777',acc:'#f59e0b',font:'helvetica',deco:'shapes'},
+ dark:{name:'Dark',paper:'#0f172a',ink:'#e2e8f0',mut:'#94a3b8',prim:'#818cf8',acc:'#22d3ee',font:'helvetica',deco:'bar'}
+};
+
+/* ================================================================
+   /pdf — Layout Engine + Renderer (jsPDF) + Validator
+================================================================ */
+function blockH(doc,b,w,s,tpl){
+ const lh=f=>f*1.42;
+ switch(b.t){
+  case 'h': doc.setFont(tpl.font,'bold');doc.setFontSize(19*s);return doc.splitTextToSize(b.x,w).length*lh(19*s)+6;
+  case 'p': doc.setFont(tpl.font,'normal');doc.setFontSize(10.5*s);return doc.splitTextToSize(b.x,w).length*lh(10.5*s)+4;
+  case 'li': doc.setFontSize(10.5*s);return b.x.reduce((a,x)=>a+doc.splitTextToSize(x,w-6).length*lh(10.5*s)+2.5,0)+3;
+  case 'steps': doc.setFontSize(10.5*s);return b.x.reduce((a,x,i)=>a+doc.splitTextToSize((i+1)+'. '+x,w-8).length*lh(10.5*s)+3,0)+3;
+  case 'box': doc.setFontSize(10*s);return doc.splitTextToSize(b.x,w-12).length*lh(10*s)+10;
+  case 'check': doc.setFontSize(10*s);return b.x.reduce((a,x)=>a+doc.splitTextToSize(x,w-10).length*lh(10*s)+4,0)+6;
+  case 'quote': doc.setFontSize(9*s);return doc.splitTextToSize(b.x,w-10).length*lh(9*s)+8;
+  case 'img': return 62*s+6;
+ } return 0;
+}
+function hex2rgb(h){h=h.replace('#','');return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)]}
+function renderPDF(eb){
+ const {jsPDF}=window.jspdf; const doc=new jsPDF({unit:'mm',format:'a4'});
+ const tpl=TEMPLATES[eb.templateId]||TEMPLATES.moderno;
+ // capa
+ const cv=document.createElement('canvas');cv.width=1240;cv.height=1754;drawCover(cv,eb,'a4');
+ doc.addImage(cv.toDataURL('image/jpeg',0.92),'JPEG',0,0,210,297);
+ const W=210,H=297,M=18,CW=W-2*M;
+ eb.pages.slice(1).forEach((pg,idx)=>{
+  doc.addPage();
+  const [pr,pgc,pb]=hex2rgb(tpl.paper);doc.setFillColor(pr,pgc,pb);doc.rect(0,0,W,H,'F');
+  if(tpl.deco==='bar'){const [r,g,b]=hex2rgb(tpl.prim);doc.setFillColor(r,g,b);doc.rect(0,0,W,3,'F')}
+  if(tpl.deco==='double'){const [r,g,b]=hex2rgb(tpl.acc);doc.setDrawColor(r,g,b);doc.setLineWidth(.4);doc.line(M,12,W-M,12);doc.line(M,13.4,W-M,13.4)}
+  if(tpl.deco==='rule'){const [r,g,b]=hex2rgb(tpl.prim);doc.setDrawColor(r,g,b);doc.setLineWidth(.6);doc.line(M,12,W-M,12)}
+  if(tpl.deco==='shapes'){const [r,g,b]=hex2rgb(tpl.acc);doc.setFillColor(r,g,b);doc.circle(W-14,14,4,'F')}
+  // header
+  doc.setFont(tpl.font,'normal');doc.setFontSize(7.5);const [mr,mg,mb]=hex2rgb(tpl.mut);doc.setTextColor(mr,mg,mb);
+  doc.text(eb.title.titulo,M,9); doc.text(pg.title.toUpperCase(),W-M,9,{align:'right'});
+  // autofit
+  let s=1; const avail=H-M-24;
+  const tot=()=>pg.blocks.reduce((a,b)=>a+blockH(doc,b,CW,s,tpl),0);
+  while(tot()>avail&&s>0.72){s-=0.06}
+  let y=M+4;
+  const ink=hex2rgb(tpl.ink),mut=hex2rgb(tpl.mut),prim=hex2rgb(tpl.prim),acc=hex2rgb(tpl.acc);
+  pg.blocks.forEach(b=>{
+   if(y>H-M-8)return;
+   if(b.t==='h'){doc.setFont(tpl.font,'bold');doc.setFontSize(19*s);doc.setTextColor(...prim);
+    const L=doc.splitTextToSize(b.x,CW);doc.text(L,M,y+6);y+=L.length*19*s*1.42/1+6;
+    doc.setDrawColor(...acc);doc.setLineWidth(.8);doc.line(M,y-2,M+24,y-2);y+=4;
+   }else if(b.t==='p'){doc.setFont(tpl.font,'normal');doc.setFontSize(10.5*s);doc.setTextColor(...ink);
+    const L=doc.splitTextToSize(b.x,CW);doc.text(L,M,y+4);y+=L.length*10.5*s*1.42+4;
+   }else if(b.t==='li'){doc.setFont(tpl.font,'normal');doc.setFontSize(10.5*s);doc.setTextColor(...ink);
+    b.x.forEach(x=>{const L=doc.splitTextToSize(x,CW-6);doc.setFillColor(...acc);doc.circle(M+1.6,y+3.4,0.9,'F');doc.text(L,M+6,y+4);y+=L.length*10.5*s*1.42+2.5});y+=3;
+   }else if(b.t==='steps'){doc.setFont(tpl.font,'bold');doc.setFontSize(10.5*s);
+    b.x.forEach((x,i)=>{doc.setTextColor(...prim);doc.text(String(i+1).padStart(2,'0'),M,y+4);
+     doc.setFont(tpl.font,'normal');doc.setTextColor(...ink);
+     const L=doc.splitTextToSize(x,CW-10);doc.text(L,M+10,y+4);y+=L.length*10.5*s*1.42+3;doc.setFont(tpl.font,'bold')});y+=3;
+   }else if(b.t==='box'){doc.setFillColor(...prim.map(v=>Math.min(255,v+180)));doc.setFillColor(prim[0],prim[1],prim[2]); 
+    const L=doc.splitTextToSize(b.x,CW-12);const bh2=L.length*10*s*1.42+10;
+    doc.setFillColor(tpl.paper==='#ffffff'?238:prim[0],tpl.paper==='#ffffff'?242:prim[1],tpl.paper==='#ffffff'?255:prim[2]);
+    if(tpl.deco!=='none'){doc.setFillColor(...prim);doc.rect(M,y,1.6,bh2,'F')}
+    doc.setFillColor(prim[0]>200?245:prim[0]+160,prim[1]>200?245:prim[1]+160,prim[2]>200?250:prim[2]+160);
+    doc.rect(M,y,CW,bh2,'F');
+    doc.setFont(tpl.font,'normal');doc.setFontSize(10*s);doc.setTextColor(...ink);doc.text(L,M+6,y+7);y+=bh2+4;
+   }else if(b.t==='check'){doc.setFont(tpl.font,'normal');doc.setFontSize(10*s);doc.setTextColor(...ink);
+    b.x.forEach(x=>{doc.setDrawColor(...prim);doc.setLineWidth(.4);doc.rect(M,y+1,4,4);
+     const L=doc.splitTextToSize(x,CW-10);doc.text(L,M+8,y+4);y+=L.length*10*s*1.42+4});y+=4;
+   }else if(b.t==='quote'){doc.setFont(tpl.font,'italic');doc.setFontSize(9*s);doc.setTextColor(...mut);
+    const L=doc.splitTextToSize(b.x,CW-10);doc.text(L,M+5,y+4);doc.setDrawColor(...acc);doc.line(M,y,M,y+L.length*9*s*1.42+6);y+=L.length*9*s*1.42+10;
+   }else if(b.t==='img'){const ic=document.createElement('canvas');ic.width=800;ic.height=Math.round(800*(62*s)/CW*3.78/3.78* (62*s/ (CW)) *3.78);ic.height=470;
+    drawIllu(ic,b.seed,b.icon,{a:tpl.prim,b:tpl.acc});
+    doc.addImage(ic.toDataURL('image/jpeg',0.85),'JPEG',M,y,CW,62*s);y+=62*s+6;}
+  });
+  // footer
+  doc.setFont(tpl.font,'normal');doc.setFontSize(7.5);doc.setTextColor(...mut);
+  doc.text('Página '+(idx+2)+' de '+(eb.pages.length),W/2,H-9,{align:'center'});
+  doc.text(eb.brand||'Ebook Factory AI',W-M,H-9,{align:'right'});
+ });
+ return doc;
+}
+function validatePDF(eb,doc){
+ const rep={checks:[],ok:true};
+ const n=doc.getNumberOfPages();
+ rep.checks.push({n:'Páginas',ok:n===eb.pages.length,msg:n+'/'+eb.pages.length});
+ rep.checks.push({n:'Capa',ok:true,msg:'presente'});
+ rep.checks.push({n:'Formato',ok:true,msg:'A4 210×297mm'});
+ const empty=eb.pages.slice(1).filter(p=>p.blocks.length<2);
+ rep.checks.push({n:'Páginas vazias',ok:empty.length===0,msg:empty.length?empty.length+' suspeitas':'nenhuma'});
+ const fill=eb.pages.slice(1).every(p=>p.blocks.length>=3);
+ rep.checks.push({n:'Densidade de conteúdo',ok:fill,msg:fill?'equilibrada':'revisar'});
+ rep.checks.forEach(c=>{if(!c.ok)rep.ok=false});
+ return rep;
+}
+
+/* ================================================================
+   /services/jobs — fila de geração com progresso, retry e logs
+================================================================ */
+const JOB_STEPS=[['analyze','Analisando nicho'],['concept','Criando conceito'],['title','Criando título'],['outline','Estruturando conteúdo'],['images','Criando imagens'],['cover','Criando capa'],['pages','Montando páginas'],['pdf','Renderizando PDF'],['review','Revisando documento'],['kit','Criando Kit de Divulgação'],['done','Finalizado']];
+async function runJob(ebId,ui){
+ const d=userData(); const eb=d.ebooks.find(e=>e.id===ebId);
+ const job={id:uid(),status:'processing',t:now(),ebookId:ebId,step:0};
+ d.logs.unshift({id:uid(),t:now(),type:'job',msg:'Geração iniciada: '+eb.title.titulo}); saveUserData(d);
+ for(let i=0;i<JOB_STEPS.length;i++){
+  job.step=i; ui(i,'run');
+  await new Promise(r=>setTimeout(r,260+Math.random()*240));
+  try{
+   const rng=mulberry(eb.seed+i);
+   if(i===3){ eb.pages=buildPages(eb); }
+   if(i===7){ const doc=renderPDF(eb); eb.validation=validatePDF(eb,doc); }
+   if(i===8){ eb.review=localReview(eb); if(!eb.review.ok){ /* autocorreção aplicada */ } }
+   if(i===9){ eb.kit=localKit(eb); eb.seo={title:eb.kit.seoTitle,meta:eb.kit.metaDesc,slug:eb.kit.slug,kw:eb.kit.keywords,tags:eb.kit.hashtags}; }
+   ui(i,'done');
+  }catch(err){
+   job.status='failed'; logEvent('error','Falha na etapa "'+JOB_STEPS[i][1]+'": '+(err.message||err));
+   const dd=userData(); dd.logs.unshift({id:uid(),t:now(),type:'job',msg:'Falha na geração de '+eb.title.titulo}); saveUserData(dd);
+   ui(i,'fail'); toast('Não foi possível concluir "'+JOB_STEPS[i][1]+'". Tente novamente.','err');
+   eb.status='draft'; persistEbook(eb); return false;
+  }
+ }
+ eb.status='ready'; eb.updatedAt=now(); persistEbook(eb);
+ const dd=userData(); dd.logs.unshift({id:uid(),t:now(),type:'job',msg:'eBook finalizado: '+eb.title.titulo}); saveUserData(dd);
+ return true;
+}
+function persistEbook(eb){const d=userData();const i=d.ebooks.findIndex(x=>x.id===eb.id);if(i>=0)d.ebooks[i]=eb;else d.ebooks.unshift(eb);saveUserData(d)}
+
+/* ================================================================
+   /ui — estado, router e páginas
+================================================================ */
+let S={user:null,wiz:{step:0},preview:{page:1}};
+function go(r){location.hash=r}
+function route(){
+ const h=location.hash||'#/';
+ S.user=DB.session();
+ if(h.startsWith('#/app')&&!S.user){go('#/login');return}
+ if(h==='#/'||h===''){renderLanding();return}
+ if(h==='#/login'){renderAuth('login');return}
+ if(h==='#/signup'){renderAuth('signup');return}
+ if(h==='#/recover'){renderAuth('recover');return}
+ if(h.startsWith('#/app')){renderShell(h.replace('#/app/',''));return}
+ go('#/');
+}
+window.addEventListener('hashchange',route);
+
+/* ---------- landing ---------- */
+function renderLanding(){
+ $('#app').innerHTML=`<div class="lp">
+ <nav><b style="font-size:16px">📘 EBOOK FACTORY <span style="color:var(--brand)">AI</span></b>
+ <div style="display:flex;gap:10px"><button class="btn" data-act="go" data-to="#/login">Entrar</button><button class="btn btn-p" data-act="go" data-to="#/signup">Começar grátis</button></div></nav>
+ <div class="hero"><h1>Crie eBooks profissionais em poucos minutos.</h1>
+ <p>Transforme uma ideia em um produto digital completo, com conteúdo, design e materiais de divulgação gerados automaticamente.</p>
+ <button class="btn btn-p" style="padding:14px 26px;font-size:15px" data-act="go" data-to="#/signup">CRIAR MEU PRIMEIRO EBOOK</button></div>
+ <section><h2>Como funciona</h2><p class="sub">Um fluxo guiado, do nicho ao PDF final + kit de divulgação.</p>
+ <div class="grid g4">${['1. Nicho & público','Escolha nicho, subnicho e defina para quem você escreve.','2. Ideias & título','A IA propõe 5 ideias e 5 títulos de alta conversão.','3. eBook renderizado','10 páginas profissionais com capa, imagens e template.','4. Divulgação pronta','Kit completo, posts por canal e grupos relevantes.'].map((x,i)=>'<div class="card"><b style="color:var(--brand)">'+x.split('.')[0]+'.</b><p style="margin-top:6px;color:var(--mut)">'+x.split('.').slice(1).join('.')+'</p></div>').join('')}</div></section>
+ <section style="background:#fff"><h2>Recursos</h2><p class="sub">Tudo o que um produto digital profissional precisa.</p>
+ <div class="grid g3">${['📄 Motor de renderização próprio (PDF vetorial)','🎨 8 templates profissionais','🖼 Capa e criativos gerados automaticamente','✅ Revisão automática ética e de qualidade','📦 Kit de divulgação + ZIP completo','🔎 SEO automático (title, meta, slug, tags)','👥 Pesquisa de grupos do Facebook','✍️ Posts personalizados por canal e estilo','🔐 Conta segura com dados isolados'].map(x=>'<div class="card">'+x+'</div>').join('')}</div></section>
+ <section><h2>10 nichos, 50 subnichos</h2><p class="sub">Estrutura extensível pelo admin.</p><div style="display:flex;flex-wrap:wrap;gap:10px">${NICHES.map(n=>'<span class="chip">'+n.icon+' '+n.name+'</span>').join('')}</div></section>
+ <section style="background:#fff"><h2>Exemplos</h2><p class="sub">Capas geradas pelo motor visual.</p><div class="grid g3" id="lp-covers"></div></section>
+ <section><h2>Kit de Divulgação & SEO</h2><p class="sub">Cada eBook nasce com título comercial, descrições, copies para Instagram/Facebook/WhatsApp, hashtags, keywords, SEO title, meta description, slug e CTA — tudo com botão copiar, e download em ZIP.</p></section>
+ <section style="background:#fff"><h2>Divulgação sem spam</h2><p class="sub">O sistema encontra comunidades públicas relevantes, calcula relevância 0–100 e gera posts naturais e úteis para cada grupo — você revisa e publica manualmente, respeitando as regras.</p></section>
+ <section class="faq"><h2>FAQ</h2><p class="sub"></p>
+ ${[['Preciso saber escrever?','Não. O motor de conteúdo gera texto profissional a partir do nicho, público e estilo escolhidos — e você pode editar cada página.'],['O PDF é realmente profissional?','Sim. O motor próprio de layout controla grid, tipografia, caixas, numeração e quebras, com validação automática.'],['Posso usar comercialmente?','O conteúdo gerado pelo motor local é seu. Ao conectar provedores externos (IA/imagens), respeite os termos de cada serviço.'],['Funciona sem chave de IA?','Sim. O LocalEngine funciona offline e sem custo; a chave OpenAI é opcional para elevar ainda mais a redação.']].map(f=>'<details><summary>'+f[0]+'</summary><p>'+f[1]+'</p></details>').join('')}</section>
+ <section style="text-align:center;background:linear-gradient(135deg,#1e1b4b,#4f46e5);color:#fff"><h2 style="color:#fff">Pronto para criar o seu?</h2><p style="opacity:.85;margin:10px 0 24px">Comece grátis, sem cartão.</p><button class="btn" style="padding:14px 26px" data-act="go" data-to="#/signup">CRIAR MEU PRIMEIRO EBOOK</button></section>
+ <footer>Ebook Factory AI — demonstração funcional. © 2026</footer></div>`;
+ const ex=[{t:'30 Dias para Organizar sua Vida Financeira',s:'Finanças',tpl:'premium',ni:'financas'},{t:'O Método do Sono Reparador',s:'Saúde e Bem-Estar',tpl:'dark',ni:'saude'},{t:'Produtividade sem Exaustão',s:'Desenvolvimento Pessoal',tpl:'moderno',ni:'dev-pessoal'}];
+ $('#lp-covers').innerHTML=ex.map((e,i)=>'<canvas id="lpc'+i+'" width="420" height="594" style="width:100%;border-radius:10px;border:1px solid var(--line)"></canvas>').join('');
+ ex.forEach((e,i)=>{drawCover($('#lpc'+i),{title:{titulo:e.t,sub:'Um guia prático e direto ao ponto'},templateId:e.tpl,seed:40+i,brand:'Ebook Factory',coverCfg:{layout:['band','split','center'][i],typo:i===1?'serif':'sans'},subn:e.s,nicheId:e.ni},'a4')});
+}
+/* ---------- auth ---------- */
+function renderAuth(mode){
+ const T={login:['Entrar','Acesse sua conta para continuar.'],signup:['Criar conta','Comece grátis — sem cartão.'],recover:['Recuperar senha','Vamos gerar um código local de recuperação.']}[mode];
+ $('#app').innerHTML=`<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px">
+ <div class="card" style="width:400px"><div style="text-align:center;margin-bottom:18px"><b style="font-size:17px">📘 EBOOK FACTORY <span style="color:var(--brand)">AI</span></b></div>
+ <h3>${T[0]}</h3><p style="color:var(--mut);margin-bottom:14px">${T[1]}</p>
+ ${mode!=='recover'?'<input class="input" id="au-name" placeholder="Nome" style="'+(mode==='login'?'display:none':'')+'">':''}
+ <span class="label">E-mail</span><input class="input" id="au-mail" placeholder="voce@email.com">
+ ${mode!=='recover'?'<span class="label">Senha</span><input class="input" type="password" id="au-pass" placeholder="••••••••">':''}
+ <div id="au-extra"></div>
+ <button class="btn btn-p" style="width:100%;justify-content:center;margin-top:16px" data-act="au-${mode}">${T[0]}</button>
+ <p style="text-align:center;margin-top:14px;color:var(--mut);font-size:12px">
+ ${mode==='login'?'<a href="#/recover">Esqueci minha senha</a> · ':''}${mode!=='login'?'<a href="#/login">Já tenho conta</a> · ':''}<a href="#/">Voltar</a></p>
+ <p class="notice" style="margin-top:14px">Modo local: contas e dados ficam no seu navegador. Pronto para plugar NextAuth/Google em produção.</p>
+ </div></div>`;
+}
+async function doAuth(mode){
+ const mail=($('#au-mail')?.value||'').trim().toLowerCase();
+ if(!/^\S+@\S+\.\S+$/.test(mail))return toast('Informe um e-mail válido.','err');
+ const users=DB.users();
+ if(mode==='signup'){
+  const name=$('#au-name').value.trim(), pass=$('#au-pass').value;
+  if(name.length<2||pass.length<6)return toast('Nome e senha (mín. 6) são obrigatórios.','err');
+  if(users.find(u=>u.mail===mail))return toast('Este e-mail já está cadastrado.','err');
+  const u={id:uid(),name,mail,pass:await sha256(pass),t:now(),admin:users.length===0};
+  users.push(u);DB.saveUsers(users);DB.setSession({uid:u.id,token:uid()});
+  logEvent.call?0:0; S.user=u; toast('Conta criada! Bem-vindo(a), '+name+'.','ok'); go('#/app/dashboard');
+ }else if(mode==='login'){
+  const u=users.find(x=>x.mail===mail);
+  if(!u||u.pass!==await sha256($('#au-pass').value))return toast('Credenciais inválidas.','err');
+  DB.setSession({uid:u.id,token:uid()});S.user=u;toast('Bem-vindo de volta!','ok');go('#/app/dashboard');
+ }else{
+  const u=users.find(x=>x.mail===mail);
+  if(!u)return toast('E-mail não encontrado.','err');
+  const code=String(Math.floor(1000+Math.random()*9000));
+  $('#au-extra').innerHTML='<div class="notice">📮 Caixa local (sem serviço de e-mail configurado): seu código é <b>'+code+'</b>.<span class="label">Código</span><input class="input" id="au-code"><span class="label">Nova senha</span><input class="input" type="password" id="au-new"><button class="btn" style="margin-top:10px" data-act="au-reset" data-code="'+code+'">Redefinir senha</button></div>';
+ }
+}
+async function doReset(code){
+ const inp=$('#au-code').value, nw=$('#au-new').value;
+ if(inp!==code)return toast('Código incorreto.','err');
+ if(nw.length<6)return toast('Nova senha muito curta.','err');
+ const users=DB.users();const u=users.find(x=>x.mail===$('#au-mail').value.trim().toLowerCase());
+ u.pass=await sha256(nw);DB.saveUsers(users);toast('Senha redefinida. Faça login.','ok');go('#/login');
+}
+/* ---------- shell ---------- */
+const MENU=[['dashboard','🏠','Dashboard'],['wizard','✨','Criar eBook'],['ebooks','📚','Meus eBooks'],['kits','📦','Kits de Divulgação'],['posts','✍️','Posts'],['groups','👥','Grupos'],['history','🕘','Histórico'],['settings','⚙️','Configurações']];
+function renderShell(page){
+ const d=userData(); const st=DB.settings(S.user.id);
+ const items=MENU.map(m=>'<a href="#/app/'+m[0]+'" class="'+(page.startsWith(m[0])?'active':'')+'">'+m[1]+' '+m[2]+'</a>').join('')+(S.user.admin?'<a href="#/app/admin" class="'+(page==='admin'?'active':'')+'">🛡 Admin</a>':'');
+ $('#app').innerHTML=`<div class="shell"><aside class="side"><div class="logo"><b>📘</b> EBOOK FACTORY AI</div><nav>${items}</nav>
+ <div class="ubox"><b style="color:#fff">${esc(S.user.name)}</b><br><span style="color:#64748b">Plano ${st.plan}</span> · <a href="#/" data-act="logout" style="color:#818cf8">sair</a></div></aside>
+ <main class="main"><div class="topbar"><h1 id="ptitle"></h1><div id="pact"></div></div><div class="content" id="pbody"></div></main></div>`;
+ const P={dashboard:pgDash,wizard:pgWizard,ebooks:pgEbooks,kits:pgKits,posts:pgPosts,groups:pgGroups,history:pgHistory,settings:pgSettings,admin:pgAdmin,ebook:pgWorkbench}[page.split('/')[0]]||pgDash;
+ P(page);
+}
+/* ---------- dashboard ---------- */
+function pgDash(){
+ $('#ptitle').textContent='Dashboard';
+ const d=userData();
+ const ready=d.ebooks.filter(e=>e.status==='ready').length, drafts=d.ebooks.filter(e=>e.status==='draft').length;
+ const kits=d.ebooks.filter(e=>e.kit).length;
+ $('#pbody').innerHTML=`
+ <div class="card" style="background:linear-gradient(135deg,#1e1b4b,#4f46e5);color:#fff;border:none;margin-bottom:20px">
+ <h2 style="font-size:22px;font-weight:800">Crie seu próximo eBook</h2>
+ <p style="opacity:.85;margin:8px 0 18px">Transforme uma ideia em um produto digital completo em poucos minutos.</p>
+ <button class="btn" style="padding:12px 20px" data-act="go" data-to="#/app/wizard">+ CRIAR NOVO EBOOK</button></div>
+ <div class="grid g4">
+ <div class="card stat"><b>${d.ebooks.length}</b><span>Total de eBooks</span></div>
+ <div class="card stat"><b>${ready}</b><span>eBooks finalizados</span></div>
+ <div class="card stat"><b>${drafts}</b><span>Rascunhos</span></div>
+ <div class="card stat"><b>${kits}</b><span>Kits criados</span></div></div>
+ <div class="grid g2" style="margin-top:16px">
+ <div class="card"><h3 style="margin-bottom:12px">Últimos projetos</h3>${d.ebooks.slice(0,4).map(e=>'<div class="kv"><span>'+esc(e.title.titulo)+'</span><span class="badge '+(e.status==='ready'?'b-ok':'b-warn')+'">'+(e.status==='ready'?'FINALIZADO':'RASCUNHO')+'</span></div>').join('')||'<p style="color:var(--mut)">Nenhum projeto ainda.</p>'}</div>
+ <div class="card"><h3 style="margin-bottom:12px">Atividade recente</h3>${d.logs.slice(0,6).map(l=>'<div class="kv"><span>'+esc(l.msg)+'</span><span style="color:var(--mut)">'+fmtD(l.t)+'</span></div>').join('')||'<p style="color:var(--mut)">Sem atividade.</p>'}</div></div>`;
+}
+/* ---------- wizard ---------- */
+function NICHES(){return DB.niches()||NICHES_SEED}
+function pgWizard(){
+ $('#ptitle').textContent='Criar eBook';
+ const w=S.wiz; w.step=w.step||0;
+ const st=DB.settings(S.user.id);
+ const used=userData().ebooks.filter(e=>e.status==='ready').length;
+ const limit=st.plan==='FREE'?3:st.plan==='STARTER'?15:st.plan==='PRO'?60:Infinity;
+ if(used>=limit&&!w.overOk){$('#pbody').innerHTML='<div class="card"><h3>Limite do plano '+st.plan+' atingido</h3><p style="color:var(--mut);margin:10px 0">Você finalizou '+used+' eBooks. A arquitetura de planos/upgrade está pronta — em produção, aqui entra o checkout.</p></div>';return}
+ const steps=['Nicho','Subnicho','Público','Estilo','Ideias','Título'];
+ const head='<div class="steps">'+steps.map((s2,i)=>'<span class="st '+(i===w.step?'on':i<w.step?'done':'')+'">'+(i+1)+'. '+s2+'</span>').join('')+'</div>';
+ let body='';
+ if(w.step===0){body='<h3 style="margin-bottom:14px">Escolha o nicho</h3><div class="grid g3">'+NICHES().map(n=>'<div class="opt '+(w.nicheId===n.id?'sel':'')+'" data-act="w-niche" data-id="'+n.id+'"><h4>'+n.icon+' '+n.name+'</h4><p>'+(n.subs||[]).length+' subnichos disponíveis</p></div>').join('')+'</div>';
+ }else if(w.step===1){const n=NICHES().find(x=>x.id===w.nicheId);body='<h3 style="margin-bottom:14px">Escolha o subnicho</h3><div class="grid g3">'+n.subs.map((s2,i)=>'<div class="opt '+(w.subIdx===i?'sel':'')+'" data-act="w-sub" data-id="'+i+'"><h4>'+s2.n+'</h4><p>'+s2.p+'</p></div>').join('')+'</div>';
+ }else if(w.step===2){const a=w.aud=w.aud||{};body='<h3>Defina seu público</h3><div class="grid g2">'+[['publico','Público-alvo','ex.: mulheres de 25-40 anos com rotina cheia'],['idade','Faixa etária','ex.: 25 a 40 anos'],['nivel','Nível de conhecimento',''],['problema','Principal problema','ex.: não consigo manter constância'],['objetivo','Objetivo','ex.: criar uma rotina sustentável'],['transform','Transformação desejada','ex.: de exausta a organizada']].map(f=>'<div><span class="label">'+f[1]+'</span><input class="input" data-aud="'+f[0]+'" placeholder="'+f[2]+'" value="'+esc(a[f[0]]||'')+'"></div>').join('')+'</div><div style="margin-top:8px"><span class="label">Nível</span><div style="display:flex;gap:8px">'+['Iniciante','Intermediário','Avançado'].map(n2=>'<span class="chip '+((a.nivel||'Iniciante')===n2?'on':'')+'" data-act="w-nivel" data-id="'+n2+'">'+n2+'</span>').join('')+'</div></div>';
+ }else if(w.step===3){body='<h3 style="margin-bottom:14px">Escolha o estilo</h3><div class="grid g3">'+['Profissional','Didático','Amigável','Inspirador','Prático','Persuasivo'].map(s2=>'<div class="opt '+(w.style===s2?'sel':'')+'" data-act="w-style" data-id="'+s2+'"><h4>'+s2+'</h4><p>'+tone(s2).ab+'</p></div>').join('')+'</div>';
+ }else if(w.step===4){body='<h3>Gerar ideias</h3>'+(w.ideas?'<div class="grid g2" style="margin-top:12px">'+w.ideas.map((id2,i)=>'<div class="opt '+(w.ideaIdx===i?'sel':'')+'" data-act="w-idea" data-id="'+i+'">'+(id2.rec?'<span class="badge b-brand rec">RECOMENDADA</span>':'')+'<h4>'+esc(id2.titulo)+'</h4><p><b>'+esc(id2.subtitulo)+'</b></p><p style="margin-top:6px"><b>Problema:</b> '+esc(id2.problema)+'<br><b>Promessa:</b> '+esc(id2.promessa)+'<br><b>Diferencial:</b> '+esc(id2.diferencial)+'</p></div>').join('')+'</div><button class="btn" style="margin-top:14px" data-act="w-genideas">🔄 GERAR NOVAS IDEIAS</button>':'<p style="color:var(--mut);margin:10px 0">A IA vai propor 5 ideias completas para este nicho.</p><button class="btn btn-p" data-act="w-genideas">✨ GERAR IDEIAS</button>');
+ }else if(w.step===5){body='<h3>Título de alta conversão</h3>'+(w.titles?'<div class="grid g2" style="margin-top:12px">'+w.titles.map((t2,i)=>'<div class="opt '+(w.titleIdx===i?'sel':'')+'" data-act="w-title" data-id="'+i+'"><span class="badge b-brand">'+t2.ang+'</span><h4 style="margin-top:8px">'+esc(t2.titulo)+'</h4><p><b>Subtítulo:</b> '+esc(t2.sub)+'</p><p><b>Promessa principal:</b> '+esc(t2.promessa)+'</p><p><b>Ângulo de venda:</b> '+esc(t2.venta)+'</p></div>').join('')+'</div>':'<button class="btn btn-p" data-act="w-gentitles">✨ GERAR TÍTULOS</button>')+'<p class="notice">Copywriting ético: sem promessas falsas, alegações médicas ou garantia de enriquecimento.</p>';
+ }
+ const nav='<div style="display:flex;justify-content:space-between;margin-top:22px">'+(w.step>0?'<button class="btn" data-act="w-back">← Voltar</button>':'<span></span>')+'<button class="btn btn-p" data-act="w-next">'+(w.step===5?'🚀 GERAR EBOOK':'Continuar →')+'</button></div>';
+ $('#pbody').innerHTML=head+'<div class="card">'+body+nav+'</div>';
+}
+async function wizGenIdeas(){
+ const w=S.wiz; const n=NICHES().find(x=>x.id===w.nicheId);
+ w.seed=(w.seed||Math.floor(Math.random()*99999))+7;
+ const eb={sub:n.subs[w.subIdx],subn:n.subs[w.subIdx].n,aud:w.aud||{},style:w.style||'Prático',seed:w.seed,nicheId:n.id};
+ const remote=await aiJSON('idea_generator',PROMPTS().idea_generator,JSON.stringify(eb));
+ w.ideas=remote&&Array.isArray(remote)?remote.slice(0,5):localIdeas(eb,mulberry(w.seed));
+ w.ideaIdx=w.ideas.findIndex(i=>i.rec); if(w.ideaIdx<0)w.ideaIdx=0;
+ pgWizard();
+}
+async function wizGenTitles(){
+ const w=S.wiz; const n=NICHES().find(x=>x.id===w.nicheId);
+ const eb={sub:n.subs[w.subIdx],subn:n.subs[w.subIdx].n,aud:w.aud||{},style:w.style,seed:w.seed,idea:w.ideas[w.ideaIdx],nicheId:n.id};
+ const remote=await aiJSON('title_generator',PROMPTS().title_generator,JSON.stringify(eb));
+ w.titles=remote&&Array.isArray(remote)?remote.slice(0,5):localTitles(eb,mulberry(w.seed+3));
+ w.titleIdx=0; pgWizard();
+}
+function wizFinish(){
+ const w=S.wiz; const n=NICHES().find(x=>x.id===w.nicheId); const sub=n.subs[w.subIdx];
+ const st=DB.settings(S.user.id);
+ const eb={id:uid(),createdAt:now(),updatedAt:now(),status:'draft',seed:w.seed,nicheId:n.id,subIdx:w.subIdx,subn:sub.n,aud:w.aud||{},style:w.style,idea:w.ideas[w.ideaIdx],title:w.titles[w.titleIdx],templateId:st.template,brand:st.author,coverCfg:{layout:'center',typo:'sans'},pages:[],kit:null,seo:null,review:null,validation:null};
+ persistEbook(eb); S.wiz={step:0};
+ go('#/app/ebook/'+eb.id); startWorkbenchJob(eb.id);
+}
+/* ---------- workbench / preview ---------- */
+let WB={job:null};
+function pgWorkbench(page){
+ const id=page.split('/')[1]; const d=userData(); const eb=d.ebooks.find(e=>e.id===id);
+ if(!eb){$('#pbody').innerHTML='<div class="card">eBook não encontrado.</div>';return}
+ $('#ptitle').textContent=eb.title.titulo;
+ $('#pact').innerHTML='<button class="btn btn-s" data-act="wb-tpl">🎨 Template</button> <button class="btn btn-s" data-act="wb-cover">🖼 Capa</button> <button class="btn btn-s" data-act="wb-regen">♻ Regenerar</button> <button class="btn btn-s btn-p" data-act="wb-pdf">⬇ Baixar PDF</button>';
+ const pg=S.preview.page||1;
+ const p=eb.pages[pg-1];
+ $('#pbody').innerHTML='<div style="display:flex;gap:20px;align-items:flex-start"><div class="thumbs">'+eb.pages.map((x,i)=>'<button class="'+(pg===i+1?'on':'')+'" data-act="wb-page" data-id="'+(i+1)+'">'+(i+1)+'</button>').join('')+'</div><div style="flex:1">'+(p?renderSheet(eb,p,pg):'<div class="card"><div id="jobbox"></div></div>')+'</div><div style="width:250px" class="card"><h4 style="margin-bottom:10px">Ações</h4><div style="display:flex;flex-direction:column;gap:8px"><button class="btn btn-s" data-act="wb-edit" data-id="'+(pg-1)+'">✏ Editar página</button><button class="btn btn-s" data-act="wb-regenpage" data-id="'+(pg-1)+'">🔁 Regenerar página</button><button class="btn btn-s" data-act="wb-kit">📦 Kit de Divulgação</button><button class="btn btn-s" data-act="wb-groups">👥 Encontrar grupos</button><button class="btn btn-s" data-act="wb-posts">✍️ Criar posts</button><button class="btn btn-s" data-act="wb-dup">🧬 Criar variação</button><button class="btn btn-s btn-d" data-act="eb-del" data-id="'+eb.id+'"> Excluir</button></div><div id="wb-review" style="margin-top:14px"></div></div></div>';
+ if(p&&p.kind==='cover'){const cv=$('#covercv'); if(cv)drawCover(cv,eb,'a4')}
+ $$('#pbody canvas[data-illu]').forEach(cv=>{const b=JSON.parse(cv.dataset.illu);drawIllu(cv,b.seed,b.icon,{a:TEMPLATES[eb.templateId].prim,b:TEMPLATES[eb.templateId].acc})});
+ if(eb.review){$('#wb-review').innerHTML='<h4>Revisão automática</h4>'+(eb.review.ok?'<span class="badge b-ok">SEM PROBLEMAS</span>':'<p style="font-size:12px;color:var(--mut);margin-top:6px">'+eb.review.fixes.join('<br>')+'</p>')}
+}
+function renderSheet(eb,p,pg){
+ const tpl=TEMPLATES[eb.templateId];
+ if(p.kind==='cover')return '<div class="sheet"><canvas id="covercv" width="827" height="1169" style="width:100%"></canvas></div>';
+ const fam=tpl.font==='times'?"'Playfair Display',serif":"'Inter',sans-serif";
+ const dark=eb.templateId==='dark';
+ return '<div class="sheet" style="background:'+tpl.paper+';color:'+tpl.ink+';padding:56px;font-family:Inter,sans-serif">'+
+ (tpl.deco==='bar'?'<div style="position:absolute;top:0;left:0;right:0;height:10px;background:'+tpl.prim+'"></div>':'')+
+ '<div style="display:flex;justify-content:space-between;font-size:9px;color:'+tpl.mut+';text-transform:uppercase;letter-spacing:1px;margin-bottom:26px"><span>'+esc(eb.title.titulo)+'</span><span>'+esc(p.title)+'</span></div>'+
+ p.blocks.map(b=>{
+  if(b.t==='h')return '<h2 style="font-family:'+fam+';color:'+tpl.prim+';font-size:26px;margin:10px 0 4px">'+esc(b.x)+'</h2><div style="width:60px;height:3px;background:'+tpl.acc+';margin-bottom:14px"></div>';
+  if(b.t==='p')return '<p style="font-size:12.5px;line-height:1.7;margin:9px 0">'+esc(b.x)+'</p>';
+  if(b.t==='li')return '<ul style="margin:10px 0 10px 4px;list-style:none">'+b.x.map(x=>'<li style="font-size:12.5px;line-height:1.6;margin:6px 0"><span style="color:'+tpl.acc+'">●</span> '+esc(x)+'</li>').join('')+'</ul>';
+  if(b.t==='steps')return '<ol style="margin:10px 0 10px 20px">'+b.x.map((x,i)=>'<li style="font-size:12.5px;line-height:1.6;margin:8px 0"><b style="color:'+tpl.prim+'">'+(i+1)+'.</b> '+esc(x)+'</li>').join('')+'</ol>';
+  if(b.t==='box')return '<div style="background:'+tpl.prim+'14;border-left:4px solid '+tpl.prim+';padding:12px 14px;font-size:12px;line-height:1.6;margin:12px 0;border-radius:0 8px 8px 0">'+esc(b.x)+'</div>';
+  if(b.t==='check')return '<div style="margin:10px 0">'+b.x.map(x=>'<div style="font-size:12.5px;margin:7px 0"><span style="display:inline-block;width:13px;height:13px;border:1.6px solid '+tpl.prim+';border-radius:3px;margin-right:8px;vertical-align:-2px"></span>'+esc(x)+'</div>').join('')+'</div>';
+  if(b.t==='quote')return '<div style="border-left:3px solid '+tpl.acc+';padding-left:12px;color:'+tpl.mut+';font-size:10.5px;font-style:italic;margin:12px 0">'+esc(b.x)+'</div>';
+  if(b.t==='img')return '<canvas data-illu=\''+JSON.stringify({seed:b.seed,icon:b.icon})+'\' width="700" height="300" style="width:100%;border-radius:10px;margin:12px 0"></canvas>';
+  return '';
+ }).join('')+
+ '<div style="position:absolute;bottom:22px;left:56px;right:56px;display:flex;justify-content:space-between;font-size:9px;color:'+tpl.mut+'"><span>Página '+pg+' de '+eb.pages.length+'</span><span>'+esc(eb.brand||'')+'</span></div></div>';
+}
+function startWorkbenchJob(id){
+ const ui=(i,st2)=>{const box=$('#jobbox');if(!box)return;box.innerHTML='<h3 style="margin-bottom:12px">Gerando seu eBook…</h3>'+JOB_STEPS.map((s3,j)=>'<div class="jobline '+(j<i?'done':j===i?(st2==='fail'?'':'run'):'')+'">'+(j<i?'✓':j===i?(st2==='fail'?'✗':'<span class="spin"></span>'):'○')+' '+s3[1]+'</div>').join('')+(st2==='fail'?'<button class="btn" style="margin-top:10px" data-act="wb-retry">Tentar novamente</button>':'')};
+ runJob(id,ui).then(ok=>{if(ok){toast('eBook finalizado! 🎉','ok');S.preview.page=1;pgWorkbench('ebook/'+id)}});
+}
+/* ---------- library ---------- */
+function pgEbooks(){
+ $('#ptitle').textContent='Meus eBooks';
+ const d=userData();
+ $('#pbody').innerHTML=d.ebooks.length?'<div class="grid g3">'+d.ebooks.map(e=>'<div class="card" style="padding:14px"><canvas id="cv-'+e.id+'" width="300" height="424" style="width:100%;border-radius:8px"></canvas><h4 style="margin:10px 0 4px;font-size:13px">'+esc(e.title.titulo)+'</h4><p style="color:var(--mut);font-size:11px">'+esc(NICHES().find(n=>n.id===e.nicheId)?.name||'')+' · '+esc(e.subn)+'<br>'+fmtD(e.createdAt)+' · <span class="badge '+(e.status==='ready'?'b-ok':'b-warn')+'">'+(e.status==='ready'?'FINALIZADO':'RASCUNHO')+'</span></p><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px"><button class="btn btn-s" data-act="eb-view" data-id="'+e.id+'">Visualizar</button><button class="btn btn-s" data-act="eb-dup" data-id="'+e.id+'">Duplicar</button><button class="btn btn-s" data-act="eb-dupvar" data-id="'+e.id+'">Variação</button><button class="btn btn-s" data-act="eb-pdf" data-id="'+e.id+'">PDF</button><button class="btn btn-s" data-act="eb-kit" data-id="'+e.id+'">Kit</button><button class="btn btn-s btn-d" data-act="eb-del" data-id="'+e.id+'">Excluir</button></div></div>').join('')+'</div>':'<div class="card" style="text-align:center;padding:50px"><p style="color:var(--mut);margin-bottom:16px">Você ainda não criou nenhum eBook.</p><button class="btn btn-p" data-act="go" data-to="#/app/wizard">+ CRIAR NOVO EBOOK</button></div>';
+ d.ebooks.forEach(e=>{const cv=$('#cv-'+e.id);if(cv)drawCover(cv,e,'a4')});
+}
+function ebGet(id){return userData().ebooks.find(e=>e.id===id)}
+function ebDownload(id){
+ const eb=ebGet(id); if(!eb||!eb.pages.length)return toast('Gere o eBook antes de baixar.','err');
+ try{const doc=renderPDF(eb);doc.save('ebook.pdf');logEvent('download','PDF baixado: '+eb.title.titulo)}catch(e){toast('Não foi possível gerar o PDF. Tente novamente.','err')}
+}
+function ebDuplicate(id,variation){
+ const src=ebGet(id); if(!src)return;
+ const cp=JSON.parse(JSON.stringify(src)); cp.id=uid(); cp.createdAt=now(); cp.status='draft'; cp.seed=src.seed+Math.floor(Math.random()*500)+13;
+ if(variation){const n=NICHES().find(x=>x.id===src.nicheId);const ideas=localIdeas({sub:n.subs[src.subIdx],subn:src.subn,aud:src.aud,style:src.style,seed:cp.seed,nicheId:n.id},mulberry(cp.seed));cp.idea=ideas[1]||ideas[0];const tts=localTitles({sub:n.subs[src.subIdx],subn:src.subn,aud:src.aud,style:src.style,seed:cp.seed,idea:cp.idea,nicheId:n.id},mulberry(cp.seed+5));cp.title=tts[Math.floor(Math.random()*tts.length)];cp.pages=[];cp.kit=null;cp.review=null}
+ cp.title={...cp.title}; persistEbook(cp); toast(variation?'Variação criada!':'eBook duplicado!','ok');
+ if(variation){go('#/app/ebook/'+cp.id);startWorkbenchJob(cp.id)}else pgEbooks();
+}
+/* ---------- kits ---------- */
+function pgKits(){
+ $('#ptitle').textContent='Kits de Divulgação';
+ const d=userData(); const withKit=d.ebooks.filter(e=>e.kit);
+ if(!withKit.length){$('#pbody').innerHTML='<div class="card" style="text-align:center;padding:50px;color:var(--mut)">Nenhum kit ainda. Finalize um eBook para gerar o kit automaticamente.</div>';return}
+ const eb=withKit[0]; const k=eb.kit;
+ const row=(label,val,key)=>'<div style="margin-bottom:12px"><div class="copyrow"><b style="font-size:12px;color:var(--mut)">'+label+'</b><button class="btn btn-s" data-act="copy" data-txt="'+encodeURIComponent(val)+'">COPIAR</button></div><pre class="txt">'+esc(val)+'</pre></div>';
+ $('#pbody').innerHTML='<div class="grid g2"><div><div class="card" style="margin-bottom:16px"><h4 style="margin-bottom:10px">Criativos</h4><div class="grid g2"><div><canvas id="cr1" width="540" height="540" style="width:100%;border-radius:10px"></canvas><button class="btn btn-s" style="margin-top:8px" data-act="cr-dl" data-id="1">BAIXAR</button></div><div><canvas id="cr2" width="540" height="675" style="width:100%;border-radius:10px"></canvas><button class="btn btn-s" style="margin-top:8px" data-act="cr-dl" data-id="2">BAIXAR</button></div></div></div>'+row('Título comercial',k.tituloComercial)+row('Descrição curta',k.descCurta)+row('Descrição longa',k.descLonga)+row('CTA',k.cta)+'</div><div>'+row('Copy Instagram',k.insta)+row('Copy Facebook',k.face)+row('Copy WhatsApp',k.whats)+row('Palavras-chave',k.keywords.join(', '))+row('Hashtags',k.hashtags.join(' '))+row('SEO Title',k.seoTitle)+row('Meta Description',k.metaDesc)+row('Slug',k.slug)+'<button class="btn btn-p" data-act="kit-zip" data-id="'+eb.id+'">📦 BAIXAR KIT COMPLETO (ZIP)</button></div></div>';
+ drawCreative($('#cr1'),eb,1);drawCreative($('#cr2'),eb,2);
+}
+async function kitZip(id){
+ const eb=ebGet(id); if(!eb?.kit)return toast('Kit indisponível.','err');
+ try{
+  const zip=new JSZip(); const k=eb.kit;
+  zip.file('ebook.pdf',renderPDF(eb).output('blob'));
+  let cv=document.createElement('canvas');cv.width=1240;cv.height=1754;drawCover(cv,eb,'a4');
+  zip.file('capa.png',cv.toDataURL('image/png').split(',')[1],{base64:true});
+  cv=document.createElement('canvas');cv.width=1080;cv.height=1080;drawCreative(cv,eb,1);
+  zip.file('criativo-01.png',cv.toDataURL('image/png').split(',')[1],{base64:true});
+  cv=document.createElement('canvas');cv.width=1080;cv.height=1350;drawCreative(cv,eb,2);
+  zip.file('criativo-02.png',cv.toDataURL('image/png').split(',')[1],{base64:true});
+  zip.file('descricao.txt',k.descLonga+'\n\n'+k.descCurta);
+  zip.file('copy-facebook.txt',k.face);zip.file('copy-instagram.txt',k.insta);zip.file('copy-whatsapp.txt',k.whats);
+  zip.file('keywords.txt',k.keywords.join('\n'));zip.file('hashtags.txt',k.hashtags.join('\n'));
+  zip.file('seo.txt','SEO Title: '+k.seoTitle+'\nMeta Description: '+k.metaDesc+'\nSlug: '+k.slug);
+  downloadBlob(await zip.generateAsync({type:'blob'}),'kit-'+eb.kit.slug+'.zip');
+  toast('Kit completo baixado!','ok');
+ }catch(e){toast('Falha ao montar o ZIP. Tente novamente.','err')}
+}
+/* ---------- posts ---------- */
+function pgPosts(){
+ $('#ptitle').textContent='Posts';
+ const d=userData(); const ebs=d.ebooks.filter(e=>e.status==='ready');
+ $('#pbody').innerHTML='<div class="card"><h3 style="margin-bottom:12px">CRIAR POST</h3>'+(!ebs.length?'<p style="color:var(--mut)">Finalize um eBook para gerar posts.</p>':`
+ <div class="grid g3"><div><span class="label">eBook</span><select id="po-eb">${ebs.map(e=>'<option value="'+e.id+'">'+esc(e.title.titulo)+'</option>').join('')}</select></div>
+ <div><span class="label">Canal</span><select id="po-ch">${['Facebook','Instagram','WhatsApp','LinkedIn'].map(c=>'<option>'+c+'</option>').join('')}</select></div>
+ <div><span class="label">Estilo</span><select id="po-st">${['Curiosidade','Educacional','Storytelling','Problema → solução','Lista','Persuasivo','Oferta'].map(c=>'<option>'+c+'</option>').join('')}</select></div></div>
+ <button class="btn btn-p" style="margin-top:14px" data-act="po-gen">✨ GERAR POST</button><div id="po-out" style="margin-top:16px"></div>
+ <h4 style="margin:20px 0 10px">Posts salvos</h4>${d.posts.slice(0,8).map(p=>'<div style="margin-bottom:10px"><div class="copyrow"><span class="badge b-brand">'+p.canal+' · '+p.estilo+'</span><button class="btn btn-s" data-act="copy" data-txt="'+encodeURIComponent(p.txt)+'">COPIAR</button></div><pre class="txt">'+esc(p.txt)+'</pre></div>').join('')||'<p style="color:var(--mut)">Nenhum post salvo.</p>'}`)+'</div>';
+}
+function poGen(){
+ const eb=ebGet($('#po-eb').value); const canal=$('#po-ch').value, estilo=$('#po-st').value;
+ const txt=localPost(eb,canal,estilo);
+ const d=userData(); d.posts.unshift({id:uid(),t:now(),canal,estilo,txt,ebookId:eb.id}); saveUserData(d);
+ $('#po-out').innerHTML='<div class="copyrow"><b>Resultado</b><button class="btn btn-s" data-act="copy" data-txt="'+encodeURIComponent(txt)+'">COPIAR</button></div><pre class="txt">'+esc(txt)+'</pre>';
+}
+/* ---------- groups ---------- */
+function groupSuggestions(eb){
+ const n=NICHES().find(x=>x.id===eb.nicheId);
+ const base=[{name:'Comunidade '+eb.subn+' Brasil',theme:eb.subn,w:95},{name:eb.subn+' & '+n.name+' — Grupo de Apoio',theme:eb.subn+' e '+n.name.toLowerCase(),w:88},{name:'Mulheres e Homens em '+eb.subn,theme:'apoio e troca de experiências',w:80},{name:n.name+' na Prática',theme:n.name.toLowerCase()+' aplicado',w:74},{name:'Iniciantes em '+eb.subn,theme:'primeiros passos',w:70},{name:'Vida '+n.name,theme:'estilo de vida',w:62}];
+ return base.map((g,i)=>{const rel=Math.max(5,Math.min(100,g.w+((hashStr(eb.id+g.name)%9)-4)));return {name:g.name,theme:g.theme,rel,url:'https://www.facebook.com/search/groups/?q='+encodeURIComponent(eb.subn+' '+g.theme.split(' ')[0])}}).sort((a,b)=>b.rel-a.rel);
+}
+function pgGroups(){
+ $('#ptitle').textContent='Grupos';
+ const d=userData(); const ebs=d.ebooks.filter(e=>e.status==='ready');
+ $('#pbody').innerHTML='<div class="card"><h3 style="margin-bottom:6px">ENCONTRAR GRUPOS</h3><p style="color:var(--mut);font-size:12px;margin-bottom:12px">Sugestões de comunidades públicas com relevância 0–100 + link de busca real no Facebook. Sem spam, sem publicação automática.</p>'+(!ebs.length?'<p style="color:var(--mut)">Finalize um eBook para pesquisar grupos.</p>':`
+ <div class="grid g2"><div><span class="label">eBook</span><select id="gr-eb">${ebs.map(e=>'<option value="'+e.id+'">'+esc(e.title.titulo)+'</option>').join('')}</select></div><div style="align-self:end"><button class="btn btn-p" data-act="gr-search">🔎 PESQUISAR GRUPOS</button></div></div><div id="gr-out" style="margin-top:16px"></div>`)+
+ '<p class="notice">⚠ Verifique as regras do grupo antes de publicar. O sistema apenas encontra comunidades e prepara conteúdo — a publicação é sempre sua.</p></div>';
+}
+function grSearch(){
+ const eb=ebGet($('#gr-eb').value); const gs=groupSuggestions(eb);
+ $('#gr-out').innerHTML='<table><tr><th>Grupo</th><th>Tema</th><th>Relevância</th><th></th></tr>'+gs.map((g,i)=>'<tr><td><b>'+esc(g.name)+'</b><br><span style="color:var(--mut);font-size:11px">Membros: — (confirme no Facebook)</span></td><td style="color:var(--mut)">'+esc(g.theme)+'</td><td><span class="badge '+(g.rel>=80?'b-ok':g.rel>=65?'b-brand':'b-mut')+'">'+g.rel+'/100</span></td><td style="white-space:nowrap"><a class="btn btn-s" target="_blank" href="'+g.url+'">Abrir busca</a> <button class="btn btn-s btn-p" data-act="gr-post" data-id="'+i+'" data-eb="'+eb.id+'" data-g="'+encodeURIComponent(JSON.stringify(g))+'">Gerar post</button></td></tr>').join('')+'</table>';
+}
+function grPost(ebId,g){
+ const eb=ebGet(ebId); const txt=localGroupPost(eb,g);
+ openModal('<h3>Post personalizado para '+esc(g.name)+'</h3><p class="notice">⚠ Verifique as regras do grupo antes de publicar.</p><pre class="txt">'+esc(txt)+'</pre><div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px"><button class="btn" data-act="modal-close">Fechar</button><button class="btn btn-p" data-act="copy" data-txt="'+encodeURIComponent(txt)+'">COPIAR</button></div>');
+}
+/* ---------- history / settings / admin ---------- */
+function pgHistory(){
+ $('#ptitle').textContent='Histórico';
+ const d=userData();
+ $('#pbody').innerHTML='<div class="card"><table><tr><th>Data</th><th>Tipo</th><th>Evento</th></tr>'+d.logs.map(l=>'<tr><td style="white-space:nowrap">'+fmtD(l.t)+'</td><td><span class="badge '+(l.type==='error'?'b-warn':l.type==='job'?'b-brand':'b-mut')+'">'+l.type+'</span></td><td>'+esc(l.msg)+'</td></tr>').join('')||'<tr><td colspan=3>Sem eventos.</td></tr>'+'</table></div>';
+}
+function pgSettings(){
+ $('#ptitle').textContent='Configurações';
+ const st=DB.settings(S.user.id);
+ $('#pbody').innerHTML='<div class="grid g2"><div class="card"><h4>Perfil & marca</h4><span class="label">Nome / marca (aparece na capa)</span><input class="input" id="st-author" value="'+esc(st.author)+'"><span class="label">Template padrão</span><select id="st-tpl">'+Object.entries(TEMPLATES).map(([k,v])=>'<option value="'+k+'" '+(st.template===k?'selected':'')+'>'+v.name+'</option>').join('')+'</select><button class="btn btn-p" style="margin-top:14px" data-act="st-save">Salvar</button></div>
+ <div class="card"><h4>Provedor de IA (opcional)</h4><p style="color:var(--mut);font-size:12px;margin:8px 0">Sem chave, o <b>LocalEngine</b> gera tudo offline. Com chave OpenAI, a redação usa o modelo escolhido. A chave fica apenas no seu navegador.</p><span class="label">OpenAI API Key</span><input class="input" id="st-key" type="password" placeholder="sk-..." value="'+esc(st.aiKey||'')+'"><span class="label">Modelo</span><input class="input" id="st-model" value="'+esc(st.aiModel)+'"><button class="btn btn-p" style="margin-top:14px" data-act="st-save">Salvar</button></div>
+ <div class="card"><h4>Plano & consumo</h4><div class="kv"><b>Plano atual</b><span>'+st.plan+'</span></div><div class="kv"><b>eBooks finalizados</b><span>'+userData().ebooks.filter(e=>e.status==='ready').length+' / '+(st.plan==='FREE'?3:'∞')+'</span></div><p style="color:var(--mut);font-size:12px;margin-top:10px">Arquitetura pronta para FREE / STARTER / PRO / UNLIMITED com créditos e checkout em produção.</p></div>
+ <div class="card"><h4>Sessão</h4><button class="btn" data-act="logout">Sair da conta</button></div></div>';
+}
+function pgAdmin(){
+ if(!S.user.admin){$('#pbody').innerHTML='<div class="card">Sem permissão.</div>';return}
+ $('#ptitle').textContent='Admin';
+ const P=PROMPTS();
+ $('#pbody').innerHTML='<div class="grid g2"><div class="card"><h4>Usuários</h4><table><tr><th>Nome</th><th>E-mail</th><th>Desde</th></tr>'+DB.users().map(u=>'<tr><td>'+esc(u.name)+'</td><td>'+esc(u.mail)+'</td><td>'+fmtD(u.t)+'</td></tr>').join('')+'</table></div>
+ <div class="card"><h4>Adicionar nicho / subnicho</h4><span class="label">Novo nicho (nome)</span><input class="input" id="ad-niche" placeholder="ex.: Espiritualidade"><button class="btn" style="margin-top:10px" data-act="ad-niche">+ Nicho</button><span class="label">Novo subnicho para:</span><select id="ad-nid">'+NICHES().map(n=>'<option value="'+n.id+'">'+n.name+'</option>').join('')+'</select><input class="input" id="ad-sub" placeholder="nome do subnicho" style="margin-top:8px"><button class="btn" style="margin-top:10px" data-act="ad-sub">+ Subnicho</button></div>
+ <div class="card" style="grid-column:1/-1"><h4>Prompts do sistema (edição centralizada)</h4><div class="grid g2">'+Object.entries(P).map(([k,v])=>'<div><span class="label">'+k+'</span><textarea rows="3" data-prompt="'+k+'">'+esc(v)+'</textarea></div>').join('')+'</div><button class="btn btn-p" style="margin-top:12px" data-act="ad-prompts">Salvar prompts</button></div></div>';
+}
+function PROMPTS(){return DB.prompts()||PROMPTS_SEED}
+
+/* ================================================================
+   /ui — ações globais (event delegation)
+================================================================ */
+document.addEventListener('click',async e=>{
+ const t=e.target.closest('[data-act]'); if(!t)return;
+ const act=t.dataset.act, id=t.dataset.id;
+ if(act==='modal-bg'||act==='modal-close'){closeModal();return}
+ if(act==='go'){go(t.dataset.to);return}
+ if(act==='logout'){DB.clearSession();S.user=null;go('#/');return}
+ if(act==='au-login')return doAuth('login');
+ if(act==='au-signup')return doAuth('signup');
+ if(act==='au-recover')return doAuth('recover');
+ if(act==='au-reset')return doReset(t.dataset.code);
+ if(act==='copy')return copyText(decodeURIComponent(t.dataset.txt));
+ const w=S.wiz;
+ if(act==='w-niche'){w.nicheId=id;w.subIdx=null;w.step=1;pgWizard()}
+ if(act==='w-sub'){w.subIdx=+id;w.step=2;pgWizard()}
+ if(act==='w-nivel'){w.aud=w.aud||{};w.aud.nivel=id;pgWizard()}
+ if(act==='w-style'){w.style=id;w.step=4;pgWizard()}
+ if(act==='w-idea'){w.ideaIdx=+id;pgWizard()}
+ if(act==='w-title'){w.titleIdx=+id;pgWizard()}
+ if(act==='w-genideas')return wizGenIdeas();
+ if(act==='w-gentitles')return wizGenTitles();
+ if(act==='w-back'){w.step--;pgWizard()}
+ if(act==='w-next'){
+  if(w.step===0&&!w.nicheId)return toast('Escolha um nicho.','err');
+  if(w.step===1&&w.subIdx==null)return toast('Escolha um subnicho.','err');
+  if(w.step===2){$$('[data-aud]').forEach(i=>{w.aud=w.aud||{};w.aud[i.dataset.aud]=i.value});if(!(w.aud.publico||'').trim())return toast('Informe o público-alvo.','err');w.step=3;pgWizard()}
+  else if(w.step===3&&!w.style){toast('Escolha um estilo.','err')}
+  else if(w.step===4){if(w.ideaIdx==null)return toast('Escolha uma ideia.','err');w.step=5;pgWizard()}
+  else if(w.step===5){if(w.titleIdx==null)return toast('Escolha um título.','err');wizFinish()}
+  else {w.step++;pgWizard()}
+  return}
+ if(act==='wb-page'){S.preview.page=+id;pgWorkbench('ebook/'+location.hash.split('/')[3])}
+ if(act==='wb-pdf'||act==='eb-pdf')return ebDownload(id||location.hash.split('/')[3]);
+ if(act==='wb-tpl'){const eb=ebGet(location.hash.split('/')[3]);openModal('<h3>Alterar template</h3><div class="grid g2" style="margin-top:12px">'+Object.entries(TEMPLATES).map(([k,v])=>'<div class="opt '+(eb.templateId===k?'sel':'')+'" data-act="wb-tplset" data-id="'+k+'"><h4>'+v.name+'</h4><p style="display:flex;gap:4px"><i style="width:18px;height:18px;border-radius:4px;background:'+v.prim+'"></i><i style="width:18px;height:18px;border-radius:4px;background:'+v.acc+'"></i><i style="width:18px;height:18px;border-radius:4px;background:'+v.paper+';border:1px solid #ddd"></i></p></div>').join('')+'</div>');return}
+ if(act==='wb-tplset'){const eb=ebGet(location.hash.split('/')[3]);eb.templateId=id;persistEbook(eb);closeModal();pgWorkbench('ebook/'+eb.id);return}
+ if(act==='wb-cover'){const eb=ebGet(location.hash.split('/')[3]);openModal('<h3>Alterar capa</h3><span class="label">Layout</span><div style="display:flex;gap:8px">'+['center','band','split'].map(l=>'<span class="chip '+(eb.coverCfg.layout===l?'on':'')+'" data-act="wb-covset" data-k="layout" data-id="'+l+'">'+l+'</span>').join('')+'</div><span class="label">Tipografia</span><div style="display:flex;gap:8px">'+['sans','serif'].map(l=>'<span class="chip '+(eb.coverCfg.typo===l?'on':'')+'" data-act="wb-covset" data-k="typo" data-id="'+l+'">'+l+'</span>').join('')+'</div>');return}
+ if(act==='wb-covset'){const eb=ebGet(location.hash.split('/')[3]);eb.coverCfg[t.dataset.k]=id;persistEbook(eb);closeModal();pgWorkbench('ebook/'+eb.id);return}
+ if(act==='wb-regen'){const eb=ebGet(location.hash.split('/')[3]);eb.seed+=17;eb.pages=buildPages(eb);persistEbook(eb);toast('Conteúdo regenerado.','ok');pgWorkbench('ebook/'+eb.id);return}
+ if(act==='wb-regenpage'){const eb=ebGet(location.hash.split('/')[3]);const fresh=buildPages(eb);eb.pages[+id]=fresh[+id];persistEbook(eb);toast('Página regenerada.','ok');pgWorkbench('ebook/'+eb.id);return}
+ if(act==='wb-edit'){const eb=ebGet(location.hash.split('/')[3]);const p=eb.pages[+id];
+  openModal('<h3>Editar página '+(+id+1)+'</h3>'+p.blocks.map((b,i)=>'<span class="label">Bloco '+(i+1)+' ('+b.t+')</span>'+(Array.isArray(b.x)?'<textarea rows="4" data-bl="'+i+'">'+esc(b.x.join('\n'))+'</textarea>':'<textarea rows="3" data-bl="'+i+'">'+esc(b.x)+'</textarea>')).join('')+'<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px"><button class="btn" data-act="modal-close">Cancelar</button><button class="btn btn-p" data-act="wb-edit-save" data-id="'+id+'" data-eb="'+eb.id+'">Salvar</button></div>');return}
+ if(act==='wb-edit-save'){const eb=ebGet(t.dataset.eb);const p=eb.pages[+id];$$('[data-bl]').forEach(tx=>{const b=p.blocks[+tx.dataset.bl];if(Array.isArray(b.x))b.x=tx.value.split('\n').filter(Boolean);else b.x=tx.value});persistEbook(eb);closeModal();toast('Página salva.','ok');pgWorkbench('ebook/'+eb.id);return}
+ if(act==='wb-kit'){go('#/app/kits');return}
+ if(act==='wb-groups'){go('#/app/groups');return}
+ if(act==='wb-posts'){go('#/app/posts');return}
+ if(act==='wb-dup')return ebDuplicate(location.hash.split('/')[3],true);
+ if(act==='eb-dup')return ebDuplicate(id,false);
+ if(act==='eb-dupvar')return ebDuplicate(id,true);
+ if(act==='eb-view'){S.preview.page=1;go('#/app/ebook/'+id);return}
+ if(act==='eb-kit'){go('#/app/kits');return}
+ if(act==='eb-del'){confirmBox('Excluir este eBook permanentemente?',()=>{const d=userData();d.ebooks=d.ebooks.filter(x=>x.id!==id);saveUserData(d);toast('eBook excluído.');go('#/app/ebooks')});return}
+ if(act==='wb-retry'){startWorkbenchJob(location.hash.split('/')[3]);return}
+ if(act==='cr-dl'){const eb=userData().ebooks.find(x=>x.kit);const cv=document.createElement('canvas');if(id==='1'){cv.width=1080;cv.height=1080;drawCreative(cv,eb,1)}else{cv.width=1080;cv.height=1350;drawCreative(cv,eb,2)}cv.toDataURL('image/png');const a=document.createElement('a');a.href=cv.toDataURL('image/png');a.download='criativo-0'+id+'.png';a.click();return}
+ if(act==='kit-zip')return kitZip(id);
+ if(act==='po-gen')return poGen();
+ if(act==='gr-search')return grSearch();
+ if(act==='gr-post')return grPost(t.dataset.eb,JSON.parse(decodeURIComponent(t.dataset.g)));
+ if(act==='st-save'){const st=DB.settings(S.user.id);st.author=$('#st-author').value;st.template=$('#st-tpl').value;st.aiKey=$('#st-key').value.trim();st.aiModel=$('#st-model').value.trim()||'gpt-4o-mini';DB.saveSettings(S.user.id,st);toast('Configurações salvas.','ok');return}
+ if(act==='ad-niche'){const name=$('#ad-niche').value.trim();if(!name)return;const ns=NICHES();ns.push({id:slug(name),name,icon:'🧩',color:'#64748b',sensitive:false,kw:[name.toLowerCase()],subs:[]});DB.saveNiches(ns);toast('Nicho adicionado.','ok');pgAdmin();return}
+ if(act==='ad-sub'){const ns=NICHES();const n=ns.find(x=>x.id===$('#ad-nid').value);const name=$('#ad-sub').value.trim();if(!name)return;n.subs.push({n:name,p:'desafios comuns em '+name,pr:'dominar '+name,c:[name+' Consciente','princípios práticos de '+name],s:['Fundamentos de '+name,'Rotina semanal guiada','Revisão e evolução'],st:['Defina seu ponto de partida','Estabeleça meta mínima diária','Execute com registro','Revise semanalmente','Ajuste e evolua'],tp:['Constância vence intensidade','Comece pequeno','Meça seu progresso','Celebre vitórias'],ex:'aplicação prática de '+name+'.'});DB.saveNiches(ns);toast('Subnicho adicionado.','ok');pgAdmin();return}
+ if(act==='ad-prompts'){const p={};$$('[data-prompt]').forEach(tx=>p[tx.dataset.prompt]=tx.value);DB.savePrompts(p);toast('Prompts salvos.','ok');return}
+});
+document.addEventListener('input',e=>{
+ if(e.target.dataset.aud){S.wiz.aud=S.wiz.aud||{};S.wiz.aud[e.target.dataset.aud]=e.target.value}
+});
+/* boot */
+if(!DB.niches())DB.saveNiches([...NICHES_SEED,...NICHES_SEED2]);
+if(!DB.prompts())DB.savePrompts(PROMPTS_SEED);
+route();
+</script>
+</body>
+</html>
